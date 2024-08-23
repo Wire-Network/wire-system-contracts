@@ -28,9 +28,9 @@ The `main` branch contains the latest stable branch
 
 ## Supported Operating Systems
 
-[CDT](https://gitea.gitgo.app/Wire/wire-cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the system contracts.
+[CDT](https://github.com/Wire-Network/wire-cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the system contracts.
 
-To build and run the tests as well, [Wire Sysio](https://gitea.gitgo.app/Wire/wire-sysio) is also required as a dependency, which may have its further restrictions on supported operating systems.
+To build and run the tests as well, [Wire Sysio](https://github.com/Wire-Network/wire-sysio) is also required as a dependency, which may have its further restrictions on supported operating systems.
 
 
 ## Building
@@ -41,7 +41,7 @@ The build guide below will assume you are running Ubuntu 20.04 and 22.04. Howeve
 
 The CDT dependency is required. This release of the system contracts requires at least version 3.0 of CDT. 
 
-At the moment, we only support building from source for CDT. Please refer to the guide in the [CDT README](https://gitea.gitgo.app/Wire/wire-cdt#building-from-source) for instructions on how to do this. 
+At the moment, we only support building from source for CDT. Please refer to the guide in the [CDT README](https://github.com/Wire-Network/wire-cdt#building-from-source) for instructions on how to do this. 
 
 It is important to keep the path to the build directory in the shell environment variable `CDT_BUILD_PATH` for later use when building the system contracts.
 
@@ -49,9 +49,9 @@ It is important to keep the path to the build directory in the shell environment
 
 The Wire Sysio dependency is optional and it is only needed if you wish to build the tests using the `BUILD_TESTS` CMake flag.
 
-If want to build the contract tests, you will first need to build [Wire Sysio](https://gitea.gitgo.app/Wire/wire-sysio) from source.
+If want to build the contract tests, you will first need to build [Wire Sysio](https://github.com/Wire-Network/wire-sysio) from source.
 
-Please refer to the guide in the [Wire Sysio README](https://gitea.gitgo.app/Wire/wire-sysio) for instructions on how to do this. Please keep the path to the build directory in the shell environment variable `WIRE_SYSIO_BUILD_PATH` for later use when building the system contracts.
+Please refer to the guide in the [Wire Sysio README](https://github.com/Wire-Network/wire-sysio) for instructions on how to do this. Please keep the path to the build directory in the shell environment variable `WIRE_SYSIO_BUILD_PATH` for later use when building the system contracts.
 
 ### Build system contracts
 
