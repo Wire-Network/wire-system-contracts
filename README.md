@@ -122,7 +122,3 @@ Assuming you built with `BUILD_TESTS=ON`, you can run the tests.
 cd build/tests
 ctest -j $(nproc)
 ```
-
-## License
-
-[MIT](LICENSE)
