@@ -1,12 +1,12 @@
-Wire Network
-Copyright (c) 2024 WIRE NETWORK, INC. and its contributors. All Rights Reserved.
+Wire Network<br />
+Copyright (c) 2024 WIRE NETWORK, INC. and its contributors. All Rights Reserved.<br />
 This software is owned and created by Wire Network, but it builds upon AntelopeIO/leap and EOSIO/eos.
 
-eosnetworkfoundation/eos-system-contracts
-Copyright (c) 2021-2022 EOS Network Foundation (ENF) and its contributors.  All rights reserved. 
+eosnetworkfoundation/eos-system-contracts<br />
+Copyright (c) 2021-2022 EOS Network Foundation (ENF) and its contributors.  All rights reserved. <br />
 This ENF software is based upon:
 
-EOSIO/sysio-contracts
+EOSIO/sysio-contracts <br />
 Copyright (c) 2017-2019 block.one and its contributors.  All rights reserved.
 
 ---
