@@ -85,7 +85,7 @@ namespace sysiosystem {
    struct blockchain_parameters_v1 : sysio::blockchain_parameters
    {
       sysio::binary_extension<uint32_t> max_action_return_value_size;
-      EOSLIB_SERIALIZE_DERIVED( blockchain_parameters_v1, sysio::blockchain_parameters,
+      SYSLIB_SERIALIZE_DERIVED( blockchain_parameters_v1, sysio::blockchain_parameters,
                                 (max_action_return_value_size) )
    };
    using blockchain_parameters_t = blockchain_parameters_v1;
@@ -157,7 +157,7 @@ namespace sysiosystem {
       block_timestamp      last_name_close;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE_DERIVED( sysio_global_state, sysio::blockchain_parameters,
+      SYSLIB_SERIALIZE_DERIVED( sysio_global_state, sysio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
@@ -174,7 +174,7 @@ namespace sysiosystem {
       double            total_producer_votepay_share = 0;
       uint8_t           revision = 0; ///< used to track version updates in the future.
 
-      EOSLIB_SERIALIZE( sysio_global_state2, (new_ram_per_block)(last_ram_increase)(last_block_num)
+      SYSLIB_SERIALIZE( sysio_global_state2, (new_ram_per_block)(last_ram_increase)(last_block_num)
                         (total_producer_votepay_share)(revision) )
    };
 
@@ -184,7 +184,7 @@ namespace sysiosystem {
       time_point        last_vpay_state_update;
       double            total_vpay_share_change_rate = 0;
 
-      EOSLIB_SERIALIZE( sysio_global_state3, (last_vpay_state_update)(total_vpay_share_change_rate) )
+      SYSLIB_SERIALIZE( sysio_global_state3, (last_vpay_state_update)(total_vpay_share_change_rate) )
    };
 
    // Defines new global state parameters to store inflation rate and distribution
@@ -194,7 +194,7 @@ namespace sysiosystem {
       int64_t  inflation_pay_factor;
       int64_t  votepay_factor;
 
-      EOSLIB_SERIALIZE( sysio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
+      SYSLIB_SERIALIZE( sysio_global_state4, (continuous_rate)(inflation_pay_factor)(votepay_factor) )
    };
 
    inline sysio::block_signing_authority convert_to_block_signing_authority( const sysio::public_key& producer_key ) {
@@ -279,7 +279,7 @@ namespace sysiosystem {
       uint64_t primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
+      SYSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
    };
 
    // Voter info. Voter info stores information about the voter:
@@ -316,7 +316,7 @@ namespace sysiosystem {
       };
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
+      SYSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
    };
 
 
@@ -348,7 +348,7 @@ namespace sysiosystem {
       uint64_t primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
+      SYSLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
    };
 
    // Every user 'from' has a scope/table that uses every recipient 'to' as the primary key.
@@ -362,7 +362,7 @@ namespace sysiosystem {
       uint64_t  primary_key()const { return to.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( delegated_bandwidth, (from)(to)(net_weight)(cpu_weight) )
+      SYSLIB_SERIALIZE( delegated_bandwidth, (from)(to)(net_weight)(cpu_weight) )
 
    };
 
@@ -376,7 +376,7 @@ namespace sysiosystem {
       uint64_t  primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( refund_request, (owner)(request_time)(net_amount)(cpu_amount) )
+      SYSLIB_SERIALIZE( refund_request, (owner)(request_time)(net_amount)(cpu_amount) )
    };
 
 
@@ -439,7 +439,7 @@ namespace sysiosystem {
       time_point_sec first;
       int64_t        second;
 
-      EOSLIB_SERIALIZE(pair_time_point_sec_int64, (first)(second));
+      SYSLIB_SERIALIZE(pair_time_point_sec_int64, (first)(second));
    };
 
    // `rex_return_buckets` structure underlying the rex return buckets table. A rex return buckets table is defined by:
@@ -578,7 +578,7 @@ namespace sysiosystem {
                                                             //    token supply. Do not specify to preserve the existing
                                                             //    setting (no default exists).
 
-      EOSLIB_SERIALIZE( powerup_config_resource, (current_weight_ratio)(target_weight_ratio)(assumed_stake_weight)
+      SYSLIB_SERIALIZE( powerup_config_resource, (current_weight_ratio)(target_weight_ratio)(assumed_stake_weight)
                                                 (target_timestamp)(exponent)(decay_secs)(min_price)(max_price)    )
    };
 
@@ -590,7 +590,7 @@ namespace sysiosystem {
       std::optional<asset>    min_powerup_fee;  // Fees below this amount are rejected. Do not specify to preserve the
                                                 //    existing setting (no default exists).
 
-      EOSLIB_SERIALIZE( powerup_config, (net)(cpu)(powerup_days)(min_powerup_fee) )
+      SYSLIB_SERIALIZE( powerup_config, (net)(cpu)(powerup_days)(min_powerup_fee) )
    };
 
    struct powerup_state_resource {

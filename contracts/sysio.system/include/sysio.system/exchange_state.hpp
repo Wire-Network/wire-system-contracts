@@ -21,7 +21,7 @@ namespace sysiosystem {
          asset balance;
          double weight = .5;
 
-         EOSLIB_SERIALIZE( connector, (balance)(weight) )
+         SYSLIB_SERIALIZE( connector, (balance)(weight) )
       };
 
       connector base;
@@ -41,7 +41,7 @@ namespace sysiosystem {
                                        int64_t inp_reserve,
                                        int64_t out );
 
-      EOSLIB_SERIALIZE( exchange_state, (supply)(base)(quote) )
+      SYSLIB_SERIALIZE( exchange_state, (supply)(base)(quote) )
    };
 
    typedef sysio::multi_index< "rammarket"_n, exchange_state > rammarket;

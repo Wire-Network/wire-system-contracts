@@ -30,7 +30,7 @@ delegatebw
 deleteauth
 sysio
 sysiosystem
-EOSLIB
+SYSLIB
 fundcpuloan
 fundnetloan
 gstate

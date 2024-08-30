@@ -28,7 +28,7 @@ struct [[sysio::table, sysio::contract("sysio.system")]] block_info_record
 
    uint64_t primary_key() const { return block_height; }
 
-   EOSLIB_SERIALIZE(block_info_record, (version)(block_height)(block_timestamp))
+   SYSLIB_SERIALIZE(block_info_record, (version)(block_height)(block_timestamp))
 };
 
 using block_info_table = sysio::multi_index<"blockinfo"_n, block_info_record>;

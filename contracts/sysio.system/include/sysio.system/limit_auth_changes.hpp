@@ -13,7 +13,7 @@ namespace sysiosystem {
 
       uint64_t primary_key() const { return account.value; }
 
-      EOSLIB_SERIALIZE(limit_auth_change, (version)(account)(allow_perms)(disallow_perms))
+      SYSLIB_SERIALIZE(limit_auth_change, (version)(account)(allow_perms)(disallow_perms))
    };
 
    typedef sysio::multi_index<"limitauthchg"_n, limit_auth_change> limit_auth_change_table;

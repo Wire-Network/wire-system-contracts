@@ -82,7 +82,7 @@ struct latest_block_batch_info_result
 
 #ifndef TEST_INCLUDE
 
-   EOSLIB_SERIALIZE(latest_block_batch_info_result, (result)(error_code))
+   SYSLIB_SERIALIZE(latest_block_batch_info_result, (result)(error_code))
 
 #endif
 };
