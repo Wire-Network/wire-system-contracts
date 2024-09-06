@@ -4,7 +4,7 @@ Wire system contracts are a collection of contracts deployable to a Wire blockch
 
 - **Accounts and Permissions**: Flexible permission system for transaction-specific actions via multi-signature authorizations.
 - **Advanced Consensus**: Extends the basic consensus framework to include detailed processes for selecting Node Operators and aligning their incentives, using a system of rewards and penalties.
-- **Sophisticated Resource Management(ROA)**: Extended systems for tracking and usage of CPU/NET and RAM, and facilitates the establishment of markets where users can dynamically trade and manage resource rights.
+- **Sophisticated Resource Management(REX + ROA)**: Extended systems for tracking and usage of CPU/NET and RAM, and facilitates the establishment of markets where users can dynamically trade and manage resource rights.
 - **Token Functionality:** Support for creation and management of both fungible and non-fungible tokens.
 
 
@@ -23,21 +23,32 @@ The collection of system contracts consists of the following individual contract
 
 ## Branches
 
-The `main` branch contains the latest stable branch 
+The `master` branch contains the latest stable branch 
 
 
 ## Supported Operating Systems
 
-[CDT](https://github.com/Wire-Network/wire-cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the system contracts.
+We currently support the following operating systems.
 
-To build and run the tests as well, [Wire Sysio](https://github.com/Wire-Network/wire-sysio) is also required as a dependency, which may have its further restrictions on supported operating systems.
+| **Operating Systems**           |
+|---------------------------------|
+| Ubuntu 22.04 Jammy              |
+| Ubuntu 20.04 Focal              |
 
+***
 
 ## Building
 
 The build guide below will assume you are running Ubuntu 20.04 and 22.04. However, as mentioned above, other operating systems may also be supported.
 
-### Build or install CDT dependency
+### Prerequisites ###
+
+Before proceeding with the instructions below, please ensure the following prerequisites are met:
+
+ - **CDT Dependency**: Ensure that the Wire Contract Development Toolkit (CDT) is installed on your system.
+ - *Optional* - **Wire Sysio Built from Source**: If you wish to run build system contracts with tests, you should have already built Wire Sysio from source and installed it on your system.
+
+##### Build or install CDT dependency
 
 The CDT dependency is required. This release of the system contracts requires at least version 3.0 of CDT. 
 
@@ -45,33 +56,66 @@ At the moment, we only support building from source for CDT. Please refer to the
 
 It is important to keep the path to the build directory in the shell environment variable `CDT_BUILD_PATH` for later use when building the system contracts.
 
-### Optionally build Wire Sysio dependency
+>
+>##### Optionally build Wire Sysio dependency
+>
+>The Wire Sysio dependency is optional and it is only needed if you wish to >build the tests using the `BUILD_TESTS` CMake flag.
+>
+> If want to build the contract tests, you will first need to build [Wire Sysio](https://github.com/Wire-Network/wire-sysio) from source.
+>
+> Please refer to the guide in the [Wire Sysio README](https://github.com/Wire-Network/wire-sysio) for instructions on how to do this. Please keep the path to the build directory in the shell environment variable `WIRE_SYSIO_BUILD_PATH` for later use when building the system contracts.
 
-The Wire Sysio dependency is optional and it is only needed if you wish to build the tests using the `BUILD_TESTS` CMake flag.
-
-If want to build the contract tests, you will first need to build [Wire Sysio](https://github.com/Wire-Network/wire-sysio) from source.
-
-Please refer to the guide in the [Wire Sysio README](https://github.com/Wire-Network/wire-sysio) for instructions on how to do this. Please keep the path to the build directory in the shell environment variable `WIRE_SYSIO_BUILD_PATH` for later use when building the system contracts.
 
 ### Build system contracts
 
-#### Prerequisites ####
+You could either use the `./build.sh` script or build the system contracts manually.
 
-Before proceeding with the instructions below, please ensure the following prerequisites are met:
+*** 
+ - #### Build system contracts using the build script
 
-1. **Wire Sysio Built from Source**: You should have already built Wire Sysio from source on your system.
-2. **CDT Dependency**: Ensure that the Wire Contract Development Toolkit (CDT) is installed on your system.
-3. **System Contracts with Tests**: The instructions assume that you are building the system contracts with tests included.
+> &nbsp;
+>
+> Build contracts *without* tests
+> 
+> ```sh
+> ./build.sh
+> ```
+> 
+> Build contracts using *with* tests
+> 
+> 
+> ```sh
+> export WIRE_SYSIO_BUILD_PATH=/absolute/path/to/wire-sysio/build
+>
+> export CMAKE_PREFIX_PATH=${WIRE_SYSIO_BUILD_PATH}/lib/cmake/sysio
+>
+> ./build.sh -l $WIRE_SYSIO_BUILD_PATH
+> ```
+> &nbsp;
+> **Build script opions**
+> 
+> ```console 
+>    -c DIR: Path to CDT installation/build directory (optional if installed in a standard location).
+>    -l DIR: Path to WIRE_SYSIO build directory (optional, required for building tests).
+>    -h: Show the help menu.
+> ```
+> 
+>
 
-For configurations that differ from the above, please refer to the additional details provided in the expandable panels located further down in this section.
-For all configurations, you should first `cd` into the directory containing cloned system contracts repository.
 
-Build system contracts with tests using Wire Sysio built from source and with installed CDT package:
+*** 
 
-```
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dwire_sysio_DIR="${WIRE_SYSIO_BUILD_PATH}/lib/cmake/wire-sysio" ..
+- #### Build contracts manually
+
+Build system contracts *with* tests using Wire Sysio built from source and with installed CDT package:
+
+```sh
+export WIRE_SYSIO_BUILD_PATH=/absolute/path/to/wire-sysio/build
+
+rm -rf build && mkdir build && cd build
+
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dsysio_DIR="${WIRE_SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
+
 make -j $(nproc)
 ```
 
@@ -80,10 +124,10 @@ make -j $(nproc)
 <details>
 <summary>Build system contracts with tests using Wire Sysio and CDT both built from source</summary>
 
-```
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dwire_sysio_DIR="${WIRE_SYSIO_BUILD_PATH}/lib/cmake/wire-sysio" ..
+```sh
+rm -rf build && mkdir build && cd build
+
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dsysio_DIR="${WIRE_SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
 make -j $(nproc)
 ```
 </details>
@@ -91,9 +135,9 @@ make -j $(nproc)
 <details>
 <summary>Build system contracts without tests and with CDT build from source</summary>
 
-```
-mkdir build
-cd build
+```sh
+rm -rf build && mkdir build && cd build
+
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" ..
 make -j $(nproc)
 ```
@@ -118,7 +162,28 @@ The following is a list of custom CMake options supported in building the system
 
 Assuming you built with `BUILD_TESTS=ON`, you can run the tests.
 
-```
+```sh
 cd build/tests
 ctest -j $(nproc)
 ```
+
+---
+
+## License
+
+[FSL-1.1-Apache-2.0](./LICENSE.md)
+
+---
+
+<table>
+  <tr>
+    <td><img src="https://wire.foundation/favicon.ico" alt="Wire Network" width="50"/></td>
+    <td>
+      <strong>Wire Network</strong><br>
+      <a href="https://www.wire.network/">Website</a> | 
+      <a href="https://x.com/wire_blockchain">Twitter</a> | 
+      <a href="https://www.linkedin.com/company/wire-network-blockchain/">LinkedIn</a><br>
+      © 2024 Wire Network. All rights reserved.
+    </td>
+  </tr>
+</table
