@@ -2,11 +2,15 @@
 
 #include <sysio/sysio.hpp>
 #include <sysio/print.hpp>
+#include <sysio/singleton.hpp>
 
 namespace sysio {
     class [[sysio::contract("sysio.roa")]] roa : public contract {
         public:
             using contract::contract;
+            
+            [[sysio::action]]
+            void activateroa();
 
             /**
             * @brief Add a contract to a T1 Node Owner's whitelist.
@@ -36,6 +40,15 @@ namespace sysio {
             void  deluser(const name& username);
             
         private:
+
+            struct [[sysio::table("roastate")]] roastate {
+                bool is_active = false;
+
+                SYSLIB_SERIALIZE(roastate, (is_active))
+            };
+
+            // Define a singleton type
+            typedef sysio::singleton<"roastate"_n, roastate> roastate_t;
 
             /**
             * @brief A table scoped by T1 Node Owners account name. Tracks the name of the contract and its alloted resource limits.
