@@ -41,14 +41,14 @@ namespace sysio {
             
         private:
 
-            struct [[sysio::table("roastate")]] roastate {
+            struct [[sysio::table("roastate")]] roa_state {
                 bool is_active = false;
 
-                SYSLIB_SERIALIZE(roastate, (is_active))
+                SYSLIB_SERIALIZE(roa_state, (is_active))
             };
 
             // Define a singleton type
-            typedef sysio::singleton<"roastate"_n, roastate> roastate_t;
+            typedef sysio::singleton<"roastate"_n, roa_state> roastate_t;
 
             /**
             * @brief A table scoped by T1 Node Owners account name. Tracks the name of the contract and its alloted resource limits.
