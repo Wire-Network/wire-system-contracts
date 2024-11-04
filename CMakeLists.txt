@@ -1,11 +1,28 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(wire_system_contracts)
+set(WIRE_SYSIO_BUILD_PATH $ENV{WIRE_SYSIO_BUILD_PATH})
 
 set(VERSION_MAJOR 3)
 set(VERSION_MINOR 1)
 set(VERSION_PATCH 1)
 #set(VERSION_SUFFIX rc2)
+
+# include_directories(
+#    ${WIRE_SYSIO_BUILD_PATH}/libraries/fc/include
+#    ${WIRE_SYSIO_BUILD_PATH}/libraries/fc/libraries/ff
+#   ${WIRE_SYSIO_BUILD_PATH}/libraries/fc/secp256k1
+# )
+
+option(BUILD_CONTRACTS "Build the smart contracts" ON)
+message(STATUS "WIRE_SYSIO_BUILD_PATH is set to: ${WIRE_SYSIO_BUILD_PATH}")
+set(LIBFF_LIBRARY "${WIRE_SYSIO_BUILD_PATH}/libraries/fc/libraries/ff/libff")
+
+if(EXISTS ${LIBFF_LIBRARY})
+    message(STATUS "Found libff at ${LIBFF_LIBRARY}")
+else()
+    message(FATAL_ERROR "libff not found at ${LIBFF_LIBRARY}")
+endif()
 
 if(VERSION_SUFFIX)
   set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${VERSION_SUFFIX}")
