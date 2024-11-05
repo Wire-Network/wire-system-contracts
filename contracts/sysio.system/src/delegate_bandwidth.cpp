@@ -160,7 +160,7 @@ namespace sysiosystem {
 
    void validate_b1_vesting( int64_t stake ) {
       const int64_t base_time = 1527811200; /// Friday, June 1, 2018 12:00:00 AM UTC
-      const int64_t current_time = 1638921540; /// Tuesday, December 7, 2021 11:59:00 PM UTC
+      const int64_t current_time = current_time_point().sec_since_epoch();
       const int64_t max_claimable = 100'000'000'0000ll;
       const int64_t claimable = int64_t(max_claimable * double(current_time - base_time) / (10*seconds_per_year) );
 
