@@ -14,7 +14,7 @@ namespace sysio {
         // Check if already initialized.
         check(!state.is_active, "Contract already activated.");
         
-        // TODO: Might not be needed?
+        // TODO: Might not be needed? Would be nice to not hardcode SYS.
         // Ensure ram_byte_price is set as SYS token.
         check(ram_byte_price.symbol == symbol("SYS"), "Ram price must be represented in SYS.");
 
@@ -125,20 +125,75 @@ namespace sysio {
         });
     };
 
+    // TODO: Potentially make this into a 'native' ACTION since we need usage metrics of RAM.
     void roa::deletepolicy(const name& owner, const name& issuer) {
         require_auth(issuer);
 
-        // Instantiate the multi-index table
-        userres_t userres(get_self(), get_self().value);
+        // Get a pointer to 'issuer's policies, scoped to 'issuer'
+        policies_t policies(get_self(), issuer.value);
+        auto pol_itr = policies.find(owner.value);
+        
+        // Make sure 'issuer' actually has a policy for 'owner'
+        check(pol_itr != policies.end(), "You have no policy established for this owner.");
+        
+        // Check that the current block number is >= to the policie's time_block
+        check(pol_iter->time_block <= current_block_number(), "Cannot delete a policy before its time_block");
 
-        // Find the user in the table
-        auto user_itr = userres.find(owner.value);
-        check(user_itr != userres.end(), "Account not found");
+        // Get a pointer to 'reslimit' table
+        reslimit_t reslimit(get_self(), get_self().value);
+        auto res_itr = reslimit.find(owner.value);
 
-        // Erase the user from the table
-        userres.erase(user_itr);
+        // This should NEVER fail if a row was found under a nodeowner's policies.
+        check(res_itr != reslimit.end(), "No 'reslimit' found for 'owner'.");
 
-        // TODO: Unallocate SYS of 'issuer'
+        // Determine how many bytes this policy gave for ram: ram_weight / ram_byte_price
+        uint64_t allocated_bytes = pol_itr->ram_weight / pol_itr->ram_byte_price;
+        asset total_allocated_sys = pol_itr->cpu_weight + pol_itr->net_weight + pol_itr->ram_weight;
+
+        // TODO: Determine how many bytes are unused. If unused < allocated_bytes adjust how much gets reclaimed.
+        uint64_t reclaim_bytes;
+        asset reclaim_weight;
+
+        // Not enough 'unused' bytes to reclaim full ram_weight.
+        if(unused < allocated_bytes) {
+            // Determine how much ram_weight can be reclaimed.
+            reclaim_bytes = unused;
+            reclaim_weight = unused * pol_itr->ram_byte_price; // TODO: Make sure this math works. uint64 * asset
+        } else {
+            // We have enough unused to reclaim full amount.
+            reclaim_bytes = allocated_bytes;
+            reclaim_weight = pol_itr->ram_weight;
+        }
+
+        asset total_reclaimed_sys = pol_itr->cpu_weight + pol_itr->net_weight + reclaim_weight;
+
+        // Reclaim alloted resources from 'owner' delete row if all values are zero after reduction.
+        if(res_itr->ram_bytes == reclaim_bytes) {
+            reslimit.erase(res_itr);
+        } else {
+            reslimit.modify(get_self(), [&](struct reslimit& a) {
+                a.net_weight -= pol_itr->net_weight;
+                a.cpu_weight -= pol_itr->cpu_weight;
+                a.ram_bytes  -= reclaim_bytes// Reclaim max amount of unused bytes.
+            });
+        }
+
+        if(total_reclaimed_sys == total_allocated_sys) {
+            // Reclaiming full policy, delete policy row.
+            policies.erase(pol_itr);
+        } else {
+            // Reclaiming partial RAM, update policy.
+            policies.modify(get_self(), [&](struct policies& a) {
+                a.net_weight = asset(0, "SYS");
+                a.cpu_weight = asset(0, "SYS");
+                a.ram_weight = pol_itr->ram_weight - reclaimed_weight;
+            });
+        }
+
+        // TODO: Update nodeowners alotment of sys.
+        nodeowner.modify(get_self(), [&](struct nodeowners& a) {
+            a.allocated_sys -= total_reclaimed_sys;
+        });
     };
 
     void roa::updatepolicy(const name& owner, sysio::asset net_weight, sysio::asset cpu_weight, uint64_t ram_bytes, sysio::name issuer) {
@@ -161,7 +216,6 @@ namespace sysio {
     };
 
     // ---- Private helper methods ----
-
     bool roa::is_roa_active() {
         //Singelton index
         roastate_t state_singleton(get_self(), get_self().value);
