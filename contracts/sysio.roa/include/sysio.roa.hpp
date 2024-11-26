@@ -47,7 +47,6 @@ namespace sysio {
             [[sysio::action]]
             void deletepolicy(const name& owner, const name& issuer);
             
-            // TODO: Think about updating a policy once ram_byte_price has changed. Need to not overwrite this record of price, might be able to only allow "updating" while ram_byte_price in our singleton is the same as when the policy was issued. Would require us to allow multiple rows in 'policies' table with the same 'owner' value, not a huge deal realistically.
             /**
              * @brief Updates an already existing policy issued by 'issuer'. If the current block number is less than the policies exisiting 'time_block', values can only be increased. If it is passed 'time_block' values can be modified freely. 
              * 
@@ -60,8 +59,21 @@ namespace sysio {
              * @param ram_weight The new amount of SYS allocated for RAM.
              * @param time_block The new block number after which this ploicy can be deleted / lowered.
              */
-            [[sysio:action]]
-            void updatepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const uint64_t& ram_weight, const uint32_t& time_block);
+            // [[sysio:action]]
+            // void updatepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const uint64_t& ram_weight, const uint32_t& time_block);
+
+            /**
+             * @brief Increase the resource limits on an existing policy. Adds new weights, to existing values.
+             * 
+             * @param owner The account this policy is issued to.
+             * @param issuer The Node Owner who issued this policy.
+             * @param net_weight The amount in SYS to increase NET by.
+             * @param cpu_weight The amount in SYS to increase CPU by.
+             * @param ram_weight The amount in SYS to increase RAM by.
+             * @param time_block New time_block, if 0 leaves existing value, otherwise overwrites. MUST be greater than current block number, if setting a new value.
+             */
+            [[sysio::action]]
+            void increasepol(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint32_t& time_block);
 
             // TODO: Add an on-notify for registering ( populating ) Node Owners table.
 
