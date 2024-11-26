@@ -45,8 +45,25 @@ namespace sysio {
         state_singleton.set(state, get_self());
     };
 
+    // TODO: Decide if we want this to be an on-notify action or something other mechanism that ties into network expansion. Would be ideal for it to be automated.
     void roa::upramcost(const asset& ram_byte_price) {
+        require_auth(get_self());
 
+        //Singelton index
+        roastate_t state_singleton(get_self(), get_self().value);
+
+        // Gets values in the table.
+        auto state = state_singleton.get_or_default();
+
+        // Make sure ROA 'is_active' first.
+        check(state.is_active, "ROA is not currently active");
+        // Ensure they are setting the price in SYS.
+        check(ram_byte_price.symbol == symbol("SYS", 4), "Ram price must be set in SYS.");
+        
+        state.ram_byte_price = ram_byte_price;
+
+        // Set values to table.
+        state_singleton.set(state, get_self());
     };
     
     // ! Do we want them to submit a block number or a timestamp and then we can determine the block number?
