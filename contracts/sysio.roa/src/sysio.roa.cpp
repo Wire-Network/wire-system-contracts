@@ -45,7 +45,6 @@ namespace sysio {
         state_singleton.set(state, get_self());
     };
 
-    // TODO: Decide if we want this to be an on-notify action or some other mechanism that ties into network expansion. Would be ideal for it to be automated.
     void roa::upramcost(const asset& ram_byte_price) {
         require_auth(get_self());
 
@@ -68,7 +67,6 @@ namespace sysio {
         // TODO: Could consider updating all existing policies to reflect new ram price ratios.
     };
     
-    // TODO: Convert this to an on-notify action.
     void roa::regnodeowner(const name& owner, const uint8_t& tier, const asset& total_sys) {
         require_auth(get_self());
 
@@ -137,7 +135,7 @@ namespace sysio {
             });
         } else {
             // 'owner' already has a 'reslimit' row. Simply increment weights.
-            reslimit.modify(get_self(), [&](struct reslimit& row) {
+            reslimit.modify(res_itr, get_self(), [&](struct reslimit& row) {
                 row.net_weight += net_weight;
                 row.cpu_weight += cpu_weight;
                 row.ram_bytes += ram_bytes;
@@ -156,12 +154,12 @@ namespace sysio {
         });
 
         // Update 'issuer' total allocated SYS.
-        nodeowners.modify(get_self(), [&](struct nodeowners& row) {
+        nodeowners.modify(node_itr, get_self(), [&](struct nodeowners& row) {
             row.allocated_sys += total_new_allocation;
         });
     };
 
-    void roa::expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint32_t& time_block) {
+    void roa::expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {
         require_auth(issuer);
 
         nodeowners_t nodeowners(get_self(), get_self().value);
@@ -188,7 +186,7 @@ namespace sysio {
         check(res_itr != reslimit.end(), "No reslimit found for user.");
 
         roastate_t state_singleton(get_self(), get_self().value);
-        auto state = state_singleton.get_or_default();
+        auto state = state_singleton.get();
 
         // Can't have a negative amount of bytes allocated; ram_weight must be either 0, or enough to cover ATLEAST 1 byte of RAM.
         check((ram_weight >= state.ram_byte_price || ram_weight == asset(0, "SYS")), "ram_weight must be 0 or atleast ram_byte_price.");
@@ -196,35 +194,20 @@ namespace sysio {
         uint64_t ram_bytes = ram_weight / state.ram_byte_price;
         
         // TODO: Consider the situation where a policy is being increased, but the 'ram_byte_price' has changed since the policy was initially established. SYS calculations need to be adjusted.
-        uint32_t new_time_block;
-        if(time_block != 0) {
-            // TODO: time_block can't be lower that previously established time_block.
-            // If time_block is not 0, they are trying to update it.
-            check(time_block > current_block_number(), "Cannot set new time_block lower than the current block.");
-            // New time_block cannot be smaller than the existing policy term.
-            check(time_block > pol_itr->time_block, "Cannot set new time_block lower than the existing period.");
-
-            new_time_block = time_block;
-        } else {
-            // If time_block is 0, keep old time_block.
-            new_time_block = pol_itr->time_block;
-        }
-
         // Increase policy allotment
-        policies.modify(get_self(), [&](struct policies& row) {
+        policies.modify(pol_iter, get_self(), [&](struct policies& row) {
             row.net_weight += net_weight;
             row.cpu_weight += cpu_weight;
             row.ram_weight += ram_weight;
-            row.time_block = new_time_block;
         });
 
         // Increase 'issuer's allocated_sys
-        nodeowners.modify(get_self(), [&](struct nodeowners& row) {
+        nodeowners.modify(node_itr, get_self(), [&](struct nodeowners& row) {
             row.allocated_sys += total_new_allocation;
         });
 
         // Increase 'owners' resource limits
-        reslimit.modify(get_self(), [&](struct reslimit& row) {
+        reslimit.modify(res_itr, get_self(), [&](struct reslimit& row) {
             row.net_weight += net_weight;
             row.cpu_weight += cpu_weight;
             row.ram_bytes += ram_bytes;
@@ -234,67 +217,152 @@ namespace sysio {
     void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {
         require_auth(issuer);
 
-        // Check that time_block has passed.
+        // Fetch Node Owner
+        nodeowners_t nodeowners(get_self(), get_self().value);
+        auto nodeowner_itr = nodeowners.find(issuer.value);
+        check(nodeowner_itr != nodeowners.end(), "Issuer is not a registered Node Owner");
+
+        // Fetch Policy
         policies_t policies(get_self(), issuer.value);
-        auto pol_itr = policies.find(owner.value);
+        auto policy_itr = policies.find(owner.value);
+        check(policy_itr != policies.end(), "Policy does not exist under this issuer for the owner");
 
-        check(pol_itr != policies.end(), "No policy found for this user.");
-        check(pol_itr->time_block <= current_block_number(), "Time_block has not passed, cannot reduce policy allocation.");
+        // Ensure time_block has passed
+        uint32_t current_block = current_block_number();
+        check(current_block >= policy_itr->time_block, "Cannot reduce policy before time_block");
 
+        // Validate weights (allow zero values)
+        check(net_weight.amount >= 0, "NET weight cannot be negative");
+        check(cpu_weight.amount >= 0, "CPU weight cannot be negative");
+        check(ram_weight.amount >= 0, "RAM weight cannot be negative");
 
+        // Ensure reductions do not exceed allocations
+        check(net_weight.amount <= policy_itr->net_weight.amount, "Cannot reduce NET below zero");
+        check(cpu_weight.amount <= policy_itr->cpu_weight.amount, "Cannot reduce CPU below zero");
+        check(ram_weight.amount <= policy_itr->ram_weight.amount, "Cannot reduce RAM below zero");
+
+        
+        asset ram_byte_price = policy_itr->ram_byte_price;
+        // Calculate the number of bytes represented by ram_weight
+        int64_t ram_bytes_to_reclaim = (ram_weight.amount * pow(10, ram_weight.symbol.precision())) / ram_byte_price.amount;
+        check(ram_bytes_to_reclaim * ram_byte_price.amount == ram_weight.amount * pow(10, ram_weight.symbol.precision()),
+            "ram_weight must be divisible by ram_byte_price");
+
+        // Attempt to reclaim RAM
+        asset reclaimed_ram_weight;
+        uint64_t reclaimed_ram_bytes = revokeram(owner, issuer, ram_bytes_to_reclaim, reclaimed_ram_weight, ram_byte_price);
+
+        // Adjust allocations based on the amount actually reclaimed
+        
+        // Check reslimit Table
+        reslimit_t reslimits(get_self(), get_self().value);
+        auto reslimit_itr = reslimits.find(owner.value);
+        check(reslimit_itr != reslimits.end(), "Resource limits do not exist for the owner");
+
+        // Update Policy
+        policies.modify(policy_itr, same_payer, [&](auto& p) {
+            p.net_weight -= net_weight;
+            p.cpu_weight -= cpu_weight;
+            p.ram_weight -= reclaimed_ram_weight;
+        });
+
+        // Delete policy row if all weights are zero after subtraction
+        if (policy_itr->net_weight.amount == 0 && policy_itr->cpu_weight.amount == 0 && policy_itr->ram_weight.amount == 0) {
+            policies.erase(policy_itr);
+        }
+
+        reslimits.modify(reslimit_itr, same_payer, [&](auto& r) {
+            r.net_weight -= net_weight;
+            r.cpu_weight -= cpu_weight;
+            r.ram_bytes -= reclaimed_ram_bytes;
+        });
+
+        // Delete reslimit row if all values are zero after subtraction
+        if (reslimit_itr->net_weight.amount == 0 && reslimit_itr->cpu_weight.amount == 0 && reslimit_itr->ram_bytes == 0) {
+            reslimits.erase(reslimit_itr);
+        }
+
+        // Update Node Owner's allocated_sys
+        asset total_reclaimed_sys = net_weight + cpu_weight + reclaimed_ram_weight;
+        nodeowners.modify(nodeowner_itr, same_payer, [&](auto& no) {
+            no.allocated_sys -= total_reclaimed_sys;
+        });
     };
 
-    void roa::reclaimres(const name& owner, const name& issuer) {
+    void roa::reclaimmax(const name& owner, const name& issuer) {
         require_auth(issuer);
 
-        // Check that time_block has passed.
+        // Fetch Node Owner
+        nodeowners_t nodeowners(get_self(), get_self().value);
+        auto nodeowner_itr = nodeowners.find(issuer.value);
+        check(nodeowner_itr != nodeowners.end(), "Issuer is not a registered Node Owner");
+
+        // Fetch Policy
+        policies_t policies(get_self(), issuer.value);
+        auto policy_itr = policies.find(owner.value);
+        check(policy_itr != policies.end(), "Policy does not exist under this issuer for the owner");
+
+        // Ensure time_block has passed
+        uint32_t current_block = current_block_number();
+        check(current_block >= policy_itr->time_block, "Cannot reclaim resources before time_block");
+
+        // Store current allocations
+        asset net_to_reclaim = policy_itr->net_weight;
+        asset cpu_to_reclaim = policy_itr->cpu_weight;
+        asset ram_to_reclaim = policy_itr->ram_weight; // Upper limit
+
+        // Attempt to reclaim RAM (reclaim as much as possible)
+        asset reclaimed_ram_weight;
+        uint64_t reclaimed_ram_bytes = revokeram(owner, issuer, 0, reclaimed_ram_weight, policy_itr->ram_byte_price);
+
+        // Check reslimit Table
+        reslimit_t reslimits(get_self(), get_self().value);
+        auto reslimit_itr = reslimits.find(owner.value);
+        check(reslimit_itr != reslimits.end(), "Resource limits do not exist for the owner");
+
+        // Update Policy
+        policies.modify(policy_itr, get_self(), [&](auto& p) {
+            p.net_weight.amount = 0;
+            p.cpu_weight.amount = 0;
+            p.ram_weight -= reclaimed_ram_weight;
+        });
+
+        // Delete policy row if all weights are zero after subtraction
+        if (policy_itr->net_weight.amount == 0 && policy_itr->cpu_weight.amount == 0 && policy_itr->ram_weight.amount == 0) {
+            policies.erase(policy_itr);
+        }
+
+        reslimits.modify(reslimit_itr, get_self(), [&](auto& r) {
+            r.net_weight -= net_to_reclaim;
+            r.cpu_weight -= cpu_to_reclaim;
+            r.ram_bytes -= reclaimed_ram_bytes;
+        });
+
+        // Delete reslimit row if all values are zero after subtraction
+        if (reslimit_itr->net_weight.amount == 0 && reslimit_itr->cpu_weight.amount == 0 && reslimit_itr->ram_bytes == 0) {
+            reslimits.erase(reslimit_itr);
+        }
+        
+        // Update Node Owner's allocated_sys
+        asset total_reclaimed_sys = net_to_reclaim + cpu_to_reclaim + reclaimed_ram_weight;
+        nodeowners.modify(nodeowner_itr, get_self(), [&](auto& no) {
+            no.allocated_sys -= total_reclaimed_sys;
+        });
+    };
+
+    void roa::extendpolicy(const name& owner, const name& issuer, const uint32_t& new_time_block) {
+        require_auth(issuer);
+
+        // Pointer to Policies table
         policies_t policies(get_self(), issuer.value);
         auto pol_itr = policies.find(owner.value);
 
-        check(pol_itr != policies.end(), "No policy found for this user.");
-        check(pol_itr->time_block <= current_block_number(), "Time_block has not passed, cannot reclaim policy allocations.");
+        check(pol_itr != policies.end(), "Policy does not exist under this issuer for this owner");
+        check(new_time_block > pol_itr->time_block, "Cannot reduce a policies existing time_block");
+        check(new_time_block > current_block_number(), "You cannot set a time_block lower than the current block");
 
-        // Determine how many bytes this policy gave for ram: ram_weight / ram_byte_price
-        uint64_t allocated_bytes = pol_itr->ram_weight / pol_itr->ram_byte_price;
-        asset total_allocated_sys = pol_itr->cpu_weight + pol_itr->net_weight + pol_itr->ram_weight;
-
-        // TODO: call 'reclaimram(owner, issuer, allocated_bytes)' maybe this returns bytes? Or it simply updates the tables......TBD
-
-        asset total_reclaimed_sys = pol_itr->cpu_weight + pol_itr->net_weight + reclaim_weight;
-
-        // Get a pointer to 'reslimit' table
-        reslimit_t reslimit(get_self(), get_self().value);
-        auto res_itr = reslimit.find(owner.value);
-
-        // This should NEVER fail if a row was found under a nodeowner's policies.
-        check(res_itr != reslimit.end(), "No 'reslimit' found for 'owner'.");
-
-        // Reclaim alloted resources from 'owner' delete row if all values are zero after reduction.
-        if(res_itr->ram_bytes == reclaim_bytes) {
-            reslimit.erase(res_itr);
-        } else {
-            reslimit.modify(get_self(), [&](struct reslimit& a) {
-                a.net_weight -= pol_itr->net_weight;
-                a.cpu_weight -= pol_itr->cpu_weight;
-                a.ram_bytes  -= reclaim_bytes// Reclaim max amount of unused bytes.
-            });
-        }
-
-        if(total_reclaimed_sys == total_allocated_sys) {
-            // Reclaiming full policy, delete policy row.
-            policies.erase(pol_itr);
-        } else {
-            // Reclaiming partial RAM, update policy.
-            policies.modify(get_self(), [&](struct policies& a) {
-                a.net_weight = asset(0, "SYS");
-                a.cpu_weight = asset(0, "SYS");
-                a.ram_weight = pol_itr->ram_weight - reclaimed_weight;
-            });
-        }
-
-        // TODO: Update nodeowners alotment of sys.
-        nodeowner.modify(get_self(), [&](struct nodeowners& a) {
-            a.allocated_sys -= total_reclaimed_sys;
+        policies.modify(pol_itr, get_self(), &](auto& p) {
+            p.time_block = new_time_block;
         });
     };
 }
