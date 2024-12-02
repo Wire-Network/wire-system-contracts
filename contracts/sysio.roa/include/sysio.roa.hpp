@@ -20,6 +20,7 @@ namespace sysio {
 
             /**
              * TODO: Ideally make this on-notify or some automated system on network expansion. Will address this down the line.
+             * TODO: Could consider updating all existing policies to reflect new ram price ratios.
              * 
              * @brief Updates the cost of 1 byte of RAM measured in SYS. Requires Node Owner multisig approval, should only be used on network expansion.
              * 
@@ -29,9 +30,10 @@ namespace sysio {
             void upramcost(const asset& ram_byte_price);
 
             /**
-             * TODO: Ultimately this will be changed. Either to an on-notify via whatever Wire contract manages Node Owner registration, or if that ends up being this contract we will adjust it accordingly.
+             * TODO: Convert to multi step process. Restrict auth to Node Operator accounts.
+             * TODO: Notify council contract on registration.
              * 
-             * @brief Registers 'owner' as a Node Owner granting total_sys allotment.
+             * @brief Registers 'owner' as a Node Owner granting SYS allotment based on Tier and creates a default policy for owner.
              * 
              * @param owner The account name of the Node Owner.
              * @param tier  The tier of Node they are an owner of. 1, 2, 3
@@ -54,10 +56,8 @@ namespace sysio {
             [[sysio::action]]
             void addpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint32_t& time_block);
 
-            /**
-             * TODO: How do we feel about time_block, adjust parameter name to be more clear about how it works in this scenario? Needs to be more intuitive. I believe we should break time_block adjusting to its own action. 
-             * 
-             * @brief Increase the resource limits on an existing policy. Adds new weights, to existing values. Can increase time_block if desired.
+            /** 
+             * @brief Increase the resource limits on an existing policy. Adds new weights, to existing policy values.
              * 
              * @param owner The account this policy is issued to.
              * @param issuer The Node Owner who issued this policy.
@@ -108,7 +108,7 @@ namespace sysio {
              */
             struct [[sysio::table("roastate")]] roa_state {
                 bool is_active = false;
-                asset ram_byte_price = asset(1, SYS); // TODO: Determine starting value.
+                asset ram_byte_price = asset(1, symbol("SYS", 4); // TODO: Determine starting value.
 
                 SYSLIB_SERIALIZE(roa_state, (is_active)(ram_byte_price))
             };
@@ -184,11 +184,11 @@ namespace sysio {
             asset get_allocation_for_tier(uint8_t tier) {
                 switch (tier) {
                     case 1:
-                        return asset(400000000, symbol("SYS", 4));
+                        return asset(400000000.0000, symbol("SYS", 4));
                     case 2:
                         return asset(17857142.8571, symbol("SYS", 4)); // Adjust value as needed
                     case 3:
-                        return asset(4500, symbol("SYS", 4)); // Adjust value as needed
+                        return asset(4500.0000, symbol("SYS", 4)); // Adjust value as needed
                     default:
                         sysio::check(false, "Invalid tier"); // Fail if tier is invalid
                         return asset(0, symbol("SYS", 4));  // Unreachable but needed for compilation
