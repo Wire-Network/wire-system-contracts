@@ -1,7 +1,9 @@
 #pragma once
 
+#include <sysio/sysio.hpp>
 #include <sysio/system.hpp> // For current_block_number
 #include <sysio/singleton.hpp>
+#include <sysio/asset.hpp>
 
 namespace sysio {
     class [[sysio::contract("sysio.roa")]] roa : public contract {
@@ -31,7 +33,7 @@ namespace sysio {
 
             /**
              * TODO: Convert to multi step process. Restrict auth to Node Operator accounts.
-             * TODO: Notify council contract on registration.
+             * TODO: Notify council contract on registration, think about order of operations on council contract existing.
              * 
              * @brief Registers 'owner' as a Node Owner granting SYS allotment based on Tier and creates a default policy for owner.
              * 
@@ -50,7 +52,7 @@ namespace sysio {
              * @param issuer The Node Owner issuing the policy.
              * @param net_weight The amount of SYS allocated for NET
              * @param cpu_weight The amount of SYS allocated for CPU
-             * @param ram_weight The amount of SYS allocated for RAM. // TODO: This needs to be divisible by ram_byte_price right?
+             * @param ram_weight The amount of SYS allocated for RAM.
              * @param time_block A block number, the policy can't be reclaimed or reduced before this block.
              */
             [[sysio::action]]
@@ -63,33 +65,24 @@ namespace sysio {
              * @param issuer The Node Owner who issued this policy.
              * @param net_weight The amount in SYS to increase NET by.
              * @param cpu_weight The amount in SYS to increase CPU by.
-             * @param ram_weight The amount in SYS to increase RAM by. // TODO: This needs to be divisible by ram_byte_price right?
+             * @param ram_weight The amount in SYS to increase RAM by.
              */
             [[sysio::action]]
             void expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
 
             /**
-             * @brief Decrease the resource limits on an existing policy. Subtracts new weights from existing values. Only callable after policie's time_block.
+             * @brief Native Action: Decrease the resource limits on an existing policy. Subtracts new weights from existing values. Only callable after policie's time_block.
              * 
-             * Note: Only unused RAM can be reclaimed.
+             * Note: Will reclaim UPTO ram_weight worth of bytes, limited to the pool of unused bytes on 'owner's reslimit.
              * 
              * @param owner The account this policy is issued to.
              * @param issuer The Node Owner who issued this policy.
              * @param net_weight The amount in SYS to decrease NET by.
              * @param cpu_weight The amount in SYS to decrease CPU by.
-             * @param ram_weight The amount in SYS to decrease RAM by. CANNOT REDUCE ALREADY CONSUMED RAM.
+             * @param ram_weight The amount in SYS to attempt decreasing RAM by, returning only 
              */
-            [[sysio::action]]
-            void reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
-
-            /**
-             * @brief Reclaims maximum amount of allocated resources. Zeros out CPU / NET, and reclaims all unused RAM.
-             * 
-             * @param owner The account this policy is issued to.
-             * @param issuer The Node Owner who issued this policy.
-             */
-            [[sysio::action]]
-            void reclaimmax(const name& owner, const name& issuer);
+            // [[sysio::action("reducepolicy"), sysio::native]]
+            // void reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
 
             /**
              * @brief Increases the policie's time_block extending the policies term.
@@ -108,7 +101,7 @@ namespace sysio {
              */
             struct [[sysio::table("roastate")]] roa_state {
                 bool is_active = false;
-                asset ram_byte_price = asset(1, symbol("SYS", 4); // TODO: Determine starting value.
+                asset ram_byte_price = asset(1, symbol("SYS", 4)); // TODO: Determine starting value.
 
                 SYSLIB_SERIALIZE(roa_state, (is_active)(ram_byte_price))
             };
@@ -125,11 +118,11 @@ namespace sysio {
                 asset allocated_sys; // Total SYS allocated via policies they issued.
 
                 uint64_t primary_key() const { return owner.value; }
-                uint8_t by_tier() const { return tier; }
+                uint64_t by_tier() const { return static_cast<uint64_t>(tier); }
             };
 
             typedef multi_index<"nodeowners"_n, nodeowners, 
-                indexed_by<"bytier"_n, const_mem_fun<nodeowners, uint8_t, &nodeowners::by_tier>>
+                indexed_by<"bytier"_n, const_mem_fun<nodeowners, uint64_t, &nodeowners::by_tier>>
             > nodeowners_t;
 
             /**
@@ -149,7 +142,7 @@ namespace sysio {
             typedef multi_index<"policies"_n, policies> policies_t;
 
             /**
-             * Holds upper limits of resources an account has access to. This table is used by the Node Operators to maintain usage metrics, replaces 'userres' on sysio.
+             * Scoped to Owner: Holds upper limits of resources an account has access to. This table is used by the Node Operators to maintain usage metrics, replaces 'userres' on sysio.
              */
             struct [[sysio::table]] reslimit {
                 name owner;            // Account name this policy applies to
@@ -163,18 +156,6 @@ namespace sysio {
             typedef sysio::multi_index<"reslimit"_n, reslimit> reslimit_t;
 
             // ---- Private Functions ----
-            /**
-             * @brief Native function to attempt RAM reduction. Implemented in the core system code.
-             * 
-             * @param owner The account whose RAM allocation is to be reduced.
-             * @param issuer The Node Owner issuing the reduction.
-             * @param ram_bytes_to_reclaim The number of bytes to attempt to reclaim. If zero, reclaim as much as possible.
-             * @param reclaimed_ram_weight The actual amount of RAM weight (in SYS) reclaimed. Non-const reference we will modify this with the resultant reclaimable weight.
-             * @param ram_byte_price The price per byte of RAM at the time the policy was issued.
-             * 
-             * @return uint64_t The actual number of bytes reclaimed.
-             */
-            uint64_t revokeram(const name& owner, const name& issuer, uint64_t ram_bytes_to_reclaim, asset& reclaimed_ram_weight, const asset& ram_byte_price);
 
             /**
              * @brief A simple getter for totall allotted SYS based on tier number: 1, 2, 3
@@ -184,11 +165,11 @@ namespace sysio {
             asset get_allocation_for_tier(uint8_t tier) {
                 switch (tier) {
                     case 1:
-                        return asset(400000000.0000, symbol("SYS", 4));
+                        return asset(4000000000000, symbol("SYS", 4));
                     case 2:
-                        return asset(17857142.8571, symbol("SYS", 4)); // Adjust value as needed
+                        return asset(178571428571, symbol("SYS", 4)); // Adjust value as needed
                     case 3:
-                        return asset(4500.0000, symbol("SYS", 4)); // Adjust value as needed
+                        return asset(45000000, symbol("SYS", 4)); // Adjust value as needed
                     default:
                         sysio::check(false, "Invalid tier"); // Fail if tier is invalid
                         return asset(0, symbol("SYS", 4));  // Unreachable but needed for compilation
