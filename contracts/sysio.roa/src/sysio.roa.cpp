@@ -62,7 +62,7 @@ namespace sysio {
         roastate_t roastate(get_self(), get_self().value);
 
         // Gets values in the table.
-        auto state = roastate.get_or_default();
+        auto state = roastate.get();
 
         // Make sure ROA 'is_active' first.
         check(state.is_active, "ROA is not currently active");
@@ -75,7 +75,7 @@ namespace sysio {
         roastate.set(state, get_self());
     };
     
-    void roa::regnodeowner(const name& owner, const uint8_t& tier, const asset& total_sys) {
+    void roa::regnodeowner(const name& owner, const uint8_t& tier) {
         require_auth(get_self());
 
         // Make sure ROA is active and access to ram byte price.
@@ -169,8 +169,7 @@ namespace sysio {
 
         asset ram_byte_price = state.ram_byte_price;
         // Calculate the number of bytes represented by ram_weight
-        int64_t ram_bytes_to_allocate = (ram_weight.amount * pow(10, ram_weight.symbol.precision())) / ram_byte_price.amount;
-        check((ram_bytes_to_allocate * ram_byte_price.amount) == (ram_weight.amount * pow(10, ram_weight.symbol.precision())), "ram_weight must be in increments of ram_byte_price");
+        int64_t ram_bytes_to_allocate = ram_weight.amount / ram_byte_price.amount;
 
         // Get a total for the amount of SYS they are trying to allocate.
         asset total_new_allocation = net_weight + cpu_weight + ram_weight;
@@ -192,8 +191,8 @@ namespace sysio {
         if (res_itr == reslimit.end()) {
             reslimit.emplace(get_self(), [&](auto& row) {
                 row.owner = owner;
-                row.net_weight.amount = net_weight.amount;
-                row.cpu_weight.amount = cpu_weight.amount;
+                row.net_weight = net_weight;
+                row.cpu_weight = cpu_weight;
                 row.ram_bytes = ram_bytes_to_allocate;
             });
         } else {
@@ -244,8 +243,7 @@ namespace sysio {
         check(ram_weight.amount >= 0, "RAM weight cannot be negative");
 
         // Calculate the number of bytes represented by ram_weight
-        int64_t ram_bytes_to_allocate = (ram_weight.amount * pow(10, ram_weight.symbol.precision())) / pol_itr->ram_byte_price.amount;
-        check((ram_bytes_to_allocate * pol_itr->ram_byte_price.amount) == (ram_weight.amount * pow(10, ram_weight.symbol.precision())), "ram_weight must be in increments of ram_byte_price");
+        int64_t ram_bytes_to_allocate = ram_weight.amount / pol_itr->ram_byte_price.amount;
 
         asset total_new_allocation = net_weight + cpu_weight + ram_weight;
         // Make sure 'issuer' has enough unallocated SYS to supply the policy with.
@@ -256,9 +254,6 @@ namespace sysio {
 
         // This should NEVER get hit, if it does BIG issues.
         check(res_itr != reslimit.end(), "No reslimit found for user.");
-
-        roastate_t roastate(get_self(), get_self().value);
-        auto state = roastate.get();
         
         // TODO: Consider the situation where a policy is being increased, but the 'ram_byte_price' has changed since the policy was initially established. SYS calculations need to be adjusted. This would occur if a policy is being expanded after a network expansion.
         // Increase policy allotment

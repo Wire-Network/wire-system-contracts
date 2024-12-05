@@ -41,9 +41,11 @@ namespace sysio {
              * @param tier  The tier of Node they are an owner of. 1, 2, 3
              */
             [[sysio::action]]
-            void regnodeowner(const name& owner, const uint8_t& tier, const asset& total_sys);
+            void regnodeowner(const name& owner, const uint8_t& tier);
 
             /**
+             * TODO: Do we want to restrict owner to be an exisitng account? Can think of a use case for this? Potentially creation of a new account, policy gets added with 0 CPU 0 NET and MIN RAM_BYTES for account creation? And that is whats charged as usage?
+             * 
              * @brief Adds a row to the policies table scoped to 'issuer' ( Node Owner ) and either creates a row in 'reslimit' for 'owner' or increments the values if 'owner' already has a row.
              * 
              * NOTE: RAM that is consumed, cannot be reclaimed till the data filling it is freed up by 'owner', even after the policy is over.
