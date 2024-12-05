@@ -4,6 +4,7 @@
 #include <sysio/system.hpp> // For current_block_number
 #include <sysio/singleton.hpp>
 #include <sysio/asset.hpp>
+#include <sysio/dispatcher.hpp> // For SYSIO_DISPATCH of native action
 
 namespace sysio {
     class [[sysio::contract("sysio.roa")]] roa : public contract {
@@ -71,21 +72,7 @@ namespace sysio {
              */
             [[sysio::action]]
             void expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
-
-            /**
-             * @brief Native Action: Decrease the resource limits on an existing policy. Subtracts new weights from existing values. Only callable after policie's time_block.
-             * 
-             * Note: Will reclaim UPTO ram_weight worth of bytes, limited to the pool of unused bytes on 'owner's reslimit.
-             * 
-             * @param owner The account this policy is issued to.
-             * @param issuer The Node Owner who issued this policy.
-             * @param net_weight The amount in SYS to decrease NET by.
-             * @param cpu_weight The amount in SYS to decrease CPU by.
-             * @param ram_weight The amount in SYS to attempt decreasing RAM by, returning only 
-             */
-            // [[sysio::action("reducepolicy"), sysio::native]]
-            // void reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
-
+            
             /**
              * @brief Increases the policie's time_block extending the policies term.
              * 
@@ -95,6 +82,20 @@ namespace sysio {
              */
             [[sysio::action]]
             void extendpolicy(const name& owner, const name& issuer, const uint32_t& new_time_block);
+
+            /**
+             * @brief Native Action: Decrease the resource limits on an existing policy. Subtracts new weights from existing values. Only callable after policie's time_block.
+             * 
+             * Note: Will reclaim UPTO ram_weight worth of bytes, limited to the pool of unused bytes on 'owner's reslimit and upper bound by the policy ram_weight.
+             * 
+             * @param owner The account this policy is issued to.
+             * @param issuer The Node Owner who issued this policy.
+             * @param net_weight The amount in SYS to decrease NET by.
+             * @param cpu_weight The amount in SYS to decrease CPU by.
+             * @param ram_weight The amount in SYS to attempt decreasing RAM by, returning only 
+             */
+            [[sysio::action]]
+            void reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
 
         private:
             
@@ -177,5 +178,5 @@ namespace sysio {
                         return asset(0, symbol("SYS", 4));  // Unreachable but needed for compilation
                 }
             };
-    };
-} /// namespace sysio
+    }; // namespace roa
+} // namespace sysio

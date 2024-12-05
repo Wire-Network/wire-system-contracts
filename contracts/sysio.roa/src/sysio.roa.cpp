@@ -275,76 +275,6 @@ namespace sysio {
             row.ram_bytes += ram_bytes_to_allocate;
         });
     };
-    
-    // void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {
-    //     require_auth(issuer);
-
-    //     // Fetch Node Owner
-    //     nodeowners_t nodeowners(get_self(), get_self().value);
-    //     auto node_itr = nodeowners.find(issuer.value);
-    //     check(node_itr != nodeowners.end(), "Issuer is not a registered Node Owner");
-
-    //     // Fetch Policy
-    //     policies_t policies(get_self(), issuer.value);
-    //     auto policy_itr = policies.find(owner.value);
-    //     check(policy_itr != policies.end(), "Policy does not exist under this issuer for the owner");
-
-    //     // Ensure time_block has passed
-    //     uint32_t current_block = current_block_number();
-    //     check(current_block >= policy_itr->time_block, "Cannot reduce policy before time_block");
-
-    //     // Validate weights (allow zero values)
-    //     check(net_weight.amount >= 0, "NET weight cannot be negative");
-    //     check(cpu_weight.amount >= 0, "CPU weight cannot be negative");
-    //     check(ram_weight.amount >= 0, "RAM weight cannot be negative");
-
-    //     // Ensure reductions do not exceed allocations
-    //     check(net_weight.amount <= policy_itr->net_weight.amount, "Cannot reduce NET below zero");
-    //     check(cpu_weight.amount <= policy_itr->cpu_weight.amount, "Cannot reduce CPU below zero");
-    //     check(ram_weight.amount <= policy_itr->ram_weight.amount, "Cannot reduce RAM below zero");
-
-        
-    //     asset ram_byte_price = policy_itr->ram_byte_price;
-    //     // Calculate the number of bytes represented by ram_weight
-    //     int64_t ram_bytes_to_reclaim = (ram_weight.amount * pow(10, ram_weight.symbol.precision())) / ram_byte_price.amount;
-    //     check(ram_bytes_to_reclaim * ram_byte_price.amount == ram_weight.amount * pow(10, ram_weight.symbol.precision()),
-    //         "ram_weight must be divisible by ram_byte_price");
-
-    //     // TODO: Attempt to reclaim RAM checking appropriate metrics in Core
-    //     // asset reclaimed_ram_weight;
-    //     // uint64_t reclaimed_ram_bytes = revokeram(owner, issuer, ram_bytes_to_reclaim, reclaimed_ram_weight, ram_byte_price);
-
-    //     // Adjust allocations based on the amount actually reclaimed
-        
-    //     // Check reslimit Table
-    //     reslimit_t reslimits(get_self(), owner.value);
-    //     auto res_itr = reslimits.find(owner.value);
-    //     check(res_itr != reslimits.end(), "Resource limits do not exist for the owner");
-
-    //     // Update Policy
-    //     policies.modify(policy_itr, get_self(), [&](auto& row) {
-    //         row.net_weight -= net_weight;
-    //         row.cpu_weight -= cpu_weight;
-    //         row.ram_weight -= reclaimed_ram_weight;
-    //     });
-
-    //     // Delete policy row if all weights are zero after subtraction
-    //     if (policy_itr->net_weight.amount == 0 && policy_itr->cpu_weight.amount == 0 && policy_itr->ram_weight.amount == 0) {
-    //         policies.erase(policy_itr);
-    //     }
-
-    //     reslimits.modify(res_itr, get_self(), [&](auto& row) {
-    //         row.net_weight -= net_weight;
-    //         row.cpu_weight -= cpu_weight;
-    //         row.ram_bytes -= reclaimed_ram_bytes;
-    //     });
-
-    //     // Update Node Owner's allocated_sys
-    //     asset total_reclaimed_sys = net_weight + cpu_weight + reclaimed_ram_weight;
-    //     nodeowners.modify(node_itr, get_self(), [&](auto& row) {
-    //         row.allocated_sys -= total_reclaimed_sys;
-    //     });
-    // };
 
     void roa::extendpolicy(const name& owner, const name& issuer, const uint32_t& new_time_block) {
         require_auth(issuer);
@@ -361,4 +291,8 @@ namespace sysio {
             row.time_block = new_time_block;
         });
     };
-}
+    
+    void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {};
+} // namespace roa
+
+SYSIO_DISPATCH(sysio::roa, (reducepolicy));
