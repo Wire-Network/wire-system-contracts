@@ -292,7 +292,9 @@ namespace sysio {
         });
     };
     
-    void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {};
+    void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {
+       
+    };
 } // namespace roa
 
 SYSIO_DISPATCH(sysio::roa, (reducepolicy));

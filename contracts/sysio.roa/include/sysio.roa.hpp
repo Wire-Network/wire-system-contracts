@@ -6,13 +6,20 @@
 #include <sysio/asset.hpp>
 #include <sysio/dispatcher.hpp> // For SYSIO_DISPATCH of native action
 
+/**
+ *  ---- General TODOs ----
+ * 
+ * TODO: Add network generation to global table and scope nodeowners to generation?
+ * TODO: If generation is added, should make future update to access a global config table variable for consistency amongst all Wire contracts. With a system level action created for network expansions ( implementation TBD ) to increment this value and do other system level adjustments required for expansion.
+ */
 namespace sysio {
     class [[sysio::contract("sysio.roa")]] roa : public contract {
         public:
             using contract::contract;
-            
 
             /**
+             * TODO: Potentially could have, total SYS and max_ram_bytes as parameters instead ( can probably get those in the contract ) and just divide total sys by bytes to get price per byte?
+             * 
              * @brief Initializes sysio.roa, should be called as last step in Bios Boot Sequence, activating the ROA resource management system.
              * 
              * @param max_ram_bytes The max amount of bytes the network has. Should match your 'global' table's value in sysio contract. Note: bytes are represented in Base 2.
@@ -35,6 +42,7 @@ namespace sysio {
             /**
              * TODO: Convert to multi step process. Restrict auth to Node Operator accounts.
              * TODO: Notify council contract on registration, think about order of operations on council contract existing.
+             * TODO: Add creation of 'newaccount' policy per node owner? Can apply to a subset of tiers? Allocation set in roastate table, minimums etc?
              * 
              * @brief Registers 'owner' as a Node Owner granting SYS allotment based on Tier and creates a default policy for owner.
              * 
@@ -45,7 +53,7 @@ namespace sysio {
             void regnodeowner(const name& owner, const uint8_t& tier);
 
             /**
-             * TODO: Do we want to restrict owner to be an exisitng account? Can think of a use case for this? Potentially creation of a new account, policy gets added with 0 CPU 0 NET and MIN RAM_BYTES for account creation? And that is whats charged as usage?
+             * TODO: Do we want to restrict owner to be an exisitng account? Can we think of a use case for this? Potentially creation of a new account, policy gets added with 0 CPU 0 NET and MIN RAM_BYTES for account creation? And that is whats charged as usage?
              * 
              * @brief Adds a row to the policies table scoped to 'issuer' ( Node Owner ) and either creates a row in 'reslimit' for 'owner' or increments the values if 'owner' already has a row.
              * 
@@ -84,7 +92,7 @@ namespace sysio {
             void extendpolicy(const name& owner, const name& issuer, const uint32_t& new_time_block);
 
             /**
-             * @brief Native Action: Decrease the resource limits on an existing policy. Subtracts new weights from existing values. Only callable after policie's time_block.
+             * @brief Decrease the resource limits on an existing policy. Subtracts new weights from existing values. Only callable after policie's time_block.
              * 
              * Note: Will reclaim UPTO ram_weight worth of bytes, limited to the pool of unused bytes on 'owner's reslimit and upper bound by the policy ram_weight.
              * 
