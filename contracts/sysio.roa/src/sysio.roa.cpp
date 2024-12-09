@@ -139,6 +139,7 @@ namespace sysio {
             row.tier = tier;
             row.total_sys = get_allocation_for_tier(tier);
             row.allocated_sys = allocated_sys;
+            row.network_gen = state.network_gen;
         });
 
 

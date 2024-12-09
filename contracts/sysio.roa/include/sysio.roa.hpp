@@ -135,6 +135,7 @@ namespace sysio {
                 uint8_t tier;        // Represents what tier they hold: 1, 2, or 3
                 asset total_sys;     // Total SYS alloted based on tier.
                 asset allocated_sys; // Total SYS allocated via policies they issued.
+                uint8_t network_gen; // The generation this Node Owner was registered for.
 
                 uint64_t primary_key() const { return owner.value; }
                 uint64_t by_tier() const { return static_cast<uint64_t>(tier); }
