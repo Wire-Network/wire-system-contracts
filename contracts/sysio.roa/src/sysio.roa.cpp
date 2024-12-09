@@ -101,6 +101,7 @@ namespace sysio {
             // No personal policy exists yet as expected.
             policies.emplace(get_self(), [&](auto& row) {
                 row.owner = owner;
+                row.issuer = issuer;
                 row.net_weight = asset(5000, symbol("SYS", 4)); // 0.5000 SYS
                 row.cpu_weight = asset(5000, symbol("SYS", 4)); // 0.5000 SYS
                 row.ram_weight = asset(ram_weight_amount, symbol("SYS", 4));
@@ -210,6 +211,7 @@ namespace sysio {
         // Add a row to Node Owners list of policies.
         policies.emplace(get_self(), [&](auto& row) {
             row.owner = owner;
+            row.issuer = issuer;
             row.net_weight = net_weight;
             row.cpu_weight = cpu_weight;
             row.ram_weight = ram_weight;

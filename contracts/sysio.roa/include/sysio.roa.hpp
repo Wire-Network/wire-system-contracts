@@ -150,6 +150,7 @@ namespace sysio {
              */
             struct [[sysio::table]] policies {
                 name owner;             // Account name this policy applies to.
+                name issuer;            // Account name of the Node Owner who issued this policy.
                 asset net_weight;       // The amount of SYS allocated for NET.
                 asset cpu_weight;       // The amount of SYS allocated for CPU.
                 asset ram_weight;       // The amount of SYS allocated for RAM.
