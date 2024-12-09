@@ -44,7 +44,9 @@ namespace sysio {
              * TODO: Notify council contract on registration, think about order of operations on council contract existing.
              * TODO: Add creation of 'newaccount' policy per node owner? Can apply to a subset of tiers? Allocation set in roastate table, minimums etc?
              * 
-             * @brief Registers 'owner' as a Node Owner granting SYS allotment based on Tier and creates a default policy for owner.
+             * @brief Registers 'owner' as a Node Owner scoped by network_gen, granting SYS allotment based on Tier and creates a default policy for owner.
+             * 
+             * NOTE: Can only register for the current generation of the network.
              * 
              * @param owner The account name of the Node Owner.
              * @param tier  The tier of Node they are an owner of. 1, 2, 3
@@ -65,9 +67,10 @@ namespace sysio {
              * @param cpu_weight The amount of SYS allocated for CPU
              * @param ram_weight The amount of SYS allocated for RAM.
              * @param time_block A block number, the policy can't be reclaimed or reduced before this block.
+             * @param network_gen Generation of issuer, in cases were you are a Node Owner in multiple, specifies which allocation of SYS to pull from.
              */
             [[sysio::action]]
-            void addpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint32_t& time_block);
+            void addpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint32_t& time_block, const uint8_t& network_gen);
 
             /** 
              * @brief Increase the resource limits on an existing policy. Adds new weights, to existing policy values.
@@ -77,9 +80,10 @@ namespace sysio {
              * @param net_weight The amount in SYS to increase NET by.
              * @param cpu_weight The amount in SYS to increase CPU by.
              * @param ram_weight The amount in SYS to increase RAM by.
+             * @param network_gen Generation of issuer, in cases were you are a Node Owner in multiple, specifies which allocation of SYS to pull from.
              */
             [[sysio::action]]
-            void expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
+            void expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint8_t& network_gen);
             
             /**
              * @brief Increases the policie's time_block extending the policies term.
@@ -100,10 +104,11 @@ namespace sysio {
              * @param issuer The Node Owner who issued this policy.
              * @param net_weight The amount in SYS to decrease NET by.
              * @param cpu_weight The amount in SYS to decrease CPU by.
-             * @param ram_weight The amount in SYS to attempt decreasing RAM by, returning only 
+             * @param ram_weight The amount in SYS to attempt decreasing RAM by, returning only
+             * @param network_gen Generation of issuer, in cases were you are a Node Owner in multiple, specifies which allocation of SYS to adjust. 
              */
             [[sysio::action]]
-            void reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight);
+            void reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint8_t& network_gen);
 
         private:
             
@@ -113,13 +118,16 @@ namespace sysio {
             struct [[sysio::table("roastate")]] roa_state {
                 bool is_active = false;
                 asset ram_byte_price = asset(1, symbol("SYS", 4)); // TODO: Determine starting value.
+                uint8_t network_gen = 0; // Network Generation
 
-                SYSLIB_SERIALIZE(roa_state, (is_active)(ram_byte_price))
+                SYSLIB_SERIALIZE(roa_state, (is_active)(ram_byte_price)(network_gen))
             };
 
             typedef sysio::singleton<"roastate"_n, roa_state> roastate_t;
 
             /**
+             * Scoped to network_gen
+             * 
              * Basic table tracking who T1-3 Node Owners are and their availble vs allocated SYS.
              */
             struct [[sysio::table]] nodeowners {

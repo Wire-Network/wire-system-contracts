@@ -50,6 +50,7 @@ namespace sysio {
         // Set default values
         state.is_active = true;
         state.ram_byte_price = ram_byte_price;
+        state.network_gen = 0;
 
         // Set values to table.
         roastate.set(state, get_self());
@@ -83,7 +84,7 @@ namespace sysio {
         auto state = roastate.get();
         check(state.is_active, "ROA is not active yet");
 
-        nodeowners_t nodeowners(get_self(), get_self().value);
+        nodeowners_t nodeowners(get_self(), state.network_gen);
         auto node_itr = nodeowners.find(owner.value);
         
         check(node_itr == nodeowners.end(), "This account is already registered.");
@@ -144,7 +145,7 @@ namespace sysio {
         // TODO: Notify Council contract
     };
 
-    void roa::addpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint32_t& time_block) {
+    void roa::addpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint32_t& time_block, const uint8_t& network_gen) {
         // Can only issue policies for yourself.
         require_auth(issuer);
         
@@ -157,7 +158,7 @@ namespace sysio {
         // Make sure ROA 'is_active' first.
         check(state.is_active, "ROA is not currently active");
         
-        nodeowners_t nodeowners(get_self(), get_self().value);
+        nodeowners_t nodeowners(get_self(), network_gen);
         auto node_itr = nodeowners.find(issuer.value);
         // Make sure 'issuer' is actually a Node Owner.
         check(node_itr != nodeowners.end(), "Only Node Owners can issue policies.");
@@ -221,10 +222,10 @@ namespace sysio {
         });
     };
 
-    void roa::expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {
+    void roa::expandpolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint8_t& network_gen) {
         require_auth(issuer);
 
-        nodeowners_t nodeowners(get_self(), get_self().value);
+        nodeowners_t nodeowners(get_self(), network_gen);
         auto node_itr = nodeowners.find(issuer.value);
 
         // Make sure 'issuer' is a Node Owner.
@@ -292,7 +293,7 @@ namespace sysio {
         });
     };
     
-    void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight) {
+    void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint8_t& network_gen) {
        
     };
 } // namespace roa
