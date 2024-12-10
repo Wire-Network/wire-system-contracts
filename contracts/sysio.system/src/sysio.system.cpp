@@ -454,7 +454,7 @@ namespace sysiosystem {
                check( current->high_bidder == creator, "only highest bidder can claim" );
                check( current->high_bid < 0, "auction for name is not closed yet" );
                bids.erase( current );
-               require_recipient(name("domain_market"));
+               require_recipient(name("domainmarket"));
             } else {
                check( creator == suffix, "only suffix may create this account" );
             }
