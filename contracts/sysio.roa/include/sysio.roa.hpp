@@ -5,31 +5,29 @@
 #include <sysio/singleton.hpp>
 #include <sysio/asset.hpp>
 #include <sysio/dispatcher.hpp> // For SYSIO_DISPATCH of native action
+#include <sysio/privileged.hpp> 
 
 /**
  *  ---- General TODOs ----
  * 
- * TODO: Add network generation to global table and scope nodeowners to generation?
- * TODO: If generation is added, should make future update to access a global config table variable for consistency amongst all Wire contracts. With a system level action created for network expansions ( implementation TBD ) to increment this value and do other system level adjustments required for expansion.
+ * TODO: Move network_gen to a global table as a single point of truth.
  */
 namespace sysio {
     class [[sysio::contract("sysio.roa")]] roa : public contract {
         public:
             using contract::contract;
 
-            /**
-             * TODO: Potentially could have, total SYS and max_ram_bytes as parameters instead ( can probably get those in the contract ) and just divide total sys by bytes to get price per byte?
-             * 
+            /** 
              * @brief Initializes sysio.roa, should be called as last step in Bios Boot Sequence, activating the ROA resource management system.
              * 
-             * @param ram_byte_price The amount of bytes .0001 SYS is worth, set in roastate table.
+             * @param total_sys The total starting SYS of the network.
+             * @param ram_byte_price The amount of bytes .0001 SYS is worth, set in roastate table. If SYS precision is different, same concept applies, the single smallest unit of the core token.
              */
             [[sysio::action]]
-            void activateroa(const uint64_t& bytes_per_unit);
+            void activateroa(const asset& total_sys, const uint64_t& bytes_per_unit);
 
             /**
              * TODO: Ideally make this on-notify or some automated system on network expansion. Will address this down the line.
-             * TODO: Could consider updating all existing policies to reflect new ram price ratios.
              * 
              * @brief Updates the amount of bytes .0001 SYS allocates. Requires Node Owner multisig approval, should only be used on network expansion.
              * 
@@ -41,7 +39,6 @@ namespace sysio {
             /**
              * TODO: Convert to multi step process. Restrict auth to Node Operator accounts.
              * TODO: Notify council contract on registration, think about order of operations on council contract existing.
-             * TODO: Add creation of 'sysio' policy per node owner? Can apply to a subset of tiers? Allocation set in roastate table, minimums etc?
              * 
              * @brief Registers 'owner' as a Node Owner scoped by network_gen, granting SYS allotment based on Tier and creates a default policy for owner.
              * 
@@ -54,11 +51,9 @@ namespace sysio {
             void regnodeowner(const name& owner, const uint8_t& tier);
 
             /**
-             * TODO: Do we want to restrict owner to be an exisitng account? Can we think of a use case for this? Potentially creation of a new account, policy gets added with 0 CPU 0 NET and MIN RAM_BYTES for account creation? And that is whats charged as usage?
-             * 
              * @brief Adds a row to the policies table scoped to 'issuer' ( Node Owner ) and either creates a row in 'reslimit' for 'owner' or increments the values if 'owner' already has a row.
              * 
-             * NOTE: RAM that is consumed, cannot be reclaimed till the data filling it is freed up by 'owner', even after the policy is over.
+             * NOTE: Cannot allocate CPU / NET to system accounts to maintain infinite CPU / NET on these accounts.
              * 
              * @param owner The account to issue this policy for.
              * @param issuer The Node Owner issuing the policy.
@@ -73,6 +68,8 @@ namespace sysio {
 
             /** 
              * @brief Increase the resource limits on an existing policy. Adds new weights, to existing policy values.
+             * 
+             * NOTE: Cannot allocate CPU / NET to system accounts to maintain infinite CPU / NET on these accounts.
              * 
              * @param owner The account this policy is issued to.
              * @param issuer The Node Owner who issued this policy.
@@ -116,10 +113,11 @@ namespace sysio {
              */
             struct [[sysio::table("roastate")]] roa_state {
                 bool is_active = false;
+                asset total_sys = asset(0, symbol("SYS", 4));
                 uint64_t bytes_per_unit = 0;
                 uint8_t network_gen = 0; // Network Generation
 
-                SYSLIB_SERIALIZE(roa_state, (is_active)(bytes_per_unit)(network_gen))
+                SYSLIB_SERIALIZE(roa_state, (is_active)(total_sys)(bytes_per_unit)(network_gen))
             };
 
             typedef sysio::singleton<"roastate"_n, roa_state> roastate_t;
@@ -134,6 +132,8 @@ namespace sysio {
                 uint8_t tier;        // Represents what tier they hold: 1, 2, or 3
                 asset total_sys;     // Total SYS alloted based on tier.
                 asset allocated_sys; // Total SYS allocated via policies they issued.
+                asset allocated_bw;  // Total SYS allocated to CPU / NET.
+                asset allocated_ram; // Total SYS allocated to RAM.
                 uint8_t network_gen; // The generation this Node Owner was registered for.
 
                 uint64_t primary_key() const { return owner.value; }
@@ -178,22 +178,17 @@ namespace sysio {
             // ---- Private Functions ----
 
             /**
-             * @brief A simple getter for totall allotted SYS based on tier number: 1, 2, 3
+             * @brief A simple getter for totall allotted SYS based on tier number: 1, 2, 3. Matches rounding and logic used in activation.
              * 
              * @return An asset containing the amount of SYS this tier gets
              */
-            asset get_allocation_for_tier(uint8_t tier) {
-                switch (tier) {
-                    case 1:
-                        return asset(30198400, symbol("SYS", 4));
-                    case 2:
-                        return asset(1132440, symbol("SYS", 4)); // Adjust value as needed
-                    case 3:
-                        return asset(22649, symbol("SYS", 4)); // Adjust value as needed
-                    default:
-                        sysio::check(false, "Invalid tier"); // Fail if tier is invalid
-                        return asset(0, symbol("SYS", 4));  // Unreachable but needed for compilation
-                }
-            };
+            asset get_allocation_for_tier(uint8_t tier);
+
+            bool is_sysio_account(const name& account) {
+                std::string acc_str = account.to_string();
+                if (acc_str == "sysio") return true;
+                if (acc_str.size() > 5 && acc_str.rfind("sysio.", 0) == 0) return true;
+                return false;
+            }
     }; // namespace roa
 } // namespace sysio
