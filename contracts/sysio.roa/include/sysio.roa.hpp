@@ -22,27 +22,26 @@ namespace sysio {
              * 
              * @brief Initializes sysio.roa, should be called as last step in Bios Boot Sequence, activating the ROA resource management system.
              * 
-             * @param max_ram_bytes The max amount of bytes the network has. Should match your 'global' table's value in sysio contract. Note: bytes are represented in Base 2.
-             * @param ram_byte_price The cost in SYS for 1 byte of RAM. Value should change on network expansions.
+             * @param ram_byte_price The amount of bytes .0001 SYS is worth, set in roastate table.
              */
             [[sysio::action]]
-            void activateroa(const uint64_t& max_ram_bytes, const asset& ram_byte_price);
+            void activateroa(const uint64_t& bytes_per_unit);
 
             /**
              * TODO: Ideally make this on-notify or some automated system on network expansion. Will address this down the line.
              * TODO: Could consider updating all existing policies to reflect new ram price ratios.
              * 
-             * @brief Updates the cost of 1 byte of RAM measured in SYS. Requires Node Owner multisig approval, should only be used on network expansion.
+             * @brief Updates the amount of bytes .0001 SYS allocates. Requires Node Owner multisig approval, should only be used on network expansion.
              * 
-             * @param ram_byte_price The NEW cost in SYS for 1 byte of RAM.
+             * @param bytes_per_unit The NEW amount of bytes .0001 SYS is worth.
              */
             [[sysio::action]]
-            void upramcost(const asset& ram_byte_price);
+            void setbyteprice(const uint64_t& bytes_per_unit);
 
             /**
              * TODO: Convert to multi step process. Restrict auth to Node Operator accounts.
              * TODO: Notify council contract on registration, think about order of operations on council contract existing.
-             * TODO: Add creation of 'newaccount' policy per node owner? Can apply to a subset of tiers? Allocation set in roastate table, minimums etc?
+             * TODO: Add creation of 'sysio' policy per node owner? Can apply to a subset of tiers? Allocation set in roastate table, minimums etc?
              * 
              * @brief Registers 'owner' as a Node Owner scoped by network_gen, granting SYS allotment based on Tier and creates a default policy for owner.
              * 
@@ -117,10 +116,10 @@ namespace sysio {
              */
             struct [[sysio::table("roastate")]] roa_state {
                 bool is_active = false;
-                asset ram_byte_price = asset(1, symbol("SYS", 4)); // TODO: Determine starting value.
+                uint64_t bytes_per_unit = 0;
                 uint8_t network_gen = 0; // Network Generation
 
-                SYSLIB_SERIALIZE(roa_state, (is_active)(ram_byte_price)(network_gen))
+                SYSLIB_SERIALIZE(roa_state, (is_active)(bytes_per_unit)(network_gen))
             };
 
             typedef sysio::singleton<"roastate"_n, roa_state> roastate_t;
@@ -149,13 +148,13 @@ namespace sysio {
              * This table is scoped to Node Owner's account names and is used to track all policies issued by Node Owners.
              */
             struct [[sysio::table]] policies {
-                name owner;             // Account name this policy applies to.
-                name issuer;            // Account name of the Node Owner who issued this policy.
-                asset net_weight;       // The amount of SYS allocated for NET.
-                asset cpu_weight;       // The amount of SYS allocated for CPU.
-                asset ram_weight;       // The amount of SYS allocated for RAM.
-                asset ram_byte_price;   // The price, in SYS, for 1 byte of RAM when the policy was created.
-                uint32_t time_block;    // Block number, this policy can't be deleted or have its values lowered before the networks current block num >= time_block.
+                name owner;                 // Account name this policy applies to.
+                name issuer;                // Account name of the Node Owner who issued this policy.
+                asset net_weight;           // The amount of SYS allocated for NET.
+                asset cpu_weight;           // The amount of SYS allocated for CPU.
+                asset ram_weight;           // The amount of SYS allocated for RAM.
+                uint64_t bytes_per_unit;    // The amount of bytes .0001 SYS was worth when the policy was created.
+                uint32_t time_block;        // Block number, this policy can't be deleted or have its values lowered before the networks current block num >= time_block.
 
                 uint64_t primary_key() const { return owner.value; }
             };
@@ -186,11 +185,11 @@ namespace sysio {
             asset get_allocation_for_tier(uint8_t tier) {
                 switch (tier) {
                     case 1:
-                        return asset(4000000000000, symbol("SYS", 4));
+                        return asset(30198400, symbol("SYS", 4));
                     case 2:
-                        return asset(178571428571, symbol("SYS", 4)); // Adjust value as needed
+                        return asset(1132440, symbol("SYS", 4)); // Adjust value as needed
                     case 3:
-                        return asset(45000000, symbol("SYS", 4)); // Adjust value as needed
+                        return asset(22649, symbol("SYS", 4)); // Adjust value as needed
                     default:
                         sysio::check(false, "Invalid tier"); // Fail if tier is invalid
                         return asset(0, symbol("SYS", 4));  // Unreachable but needed for compilation

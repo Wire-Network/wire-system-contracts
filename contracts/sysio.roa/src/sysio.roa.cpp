@@ -2,7 +2,7 @@
 
 namespace sysio {
 
-    void roa::activateroa(const uint64_t& max_ram_bytes, const asset& ram_byte_price) {
+    void roa::activateroa(const uint64_t& bytes_per_unit) {
         require_auth(get_self());
 
         //Table index
@@ -13,50 +13,17 @@ namespace sysio {
 
         // Check if already initialized.
         check(!state.is_active, "Contract already activated.");
-        
-        // Ensure ram_byte_price is set as SYS token.
-        check(ram_byte_price.symbol == symbol("SYS", 4), "Ram price must be represented in SYS.");
-
-        // TODO: Make this accurate with the delegatebw call to put network as "active" in bios boot sequence. Need to test if we will even need to bother with that any longer since rewards system is changing. 
-        // Add sysio and sysio.roa to 'reslimit' table.
-        reslimit_t reslimit(get_self(), name("sysio.roa").value);
-        reslimit.emplace(get_self(), [&](auto& row) {
-            row.owner = "sysio.roa"_n;
-            row.net_weight = asset(0, symbol("SYS", 4)); // Set to 0 since system accounts have infinte by default
-            row.cpu_weight = asset(0, symbol("SYS", 4)); // Set to 0 since system accounts have infinite by default
-            row.ram_bytes = max_ram_bytes; // Set to max network bytes.
-        });
-        
-        // TODO: Determine if we even need these, I don't think we do. Unless contract == payer? sysio.token setup to charge users, which should result in their policy paying for ram usage. This is ideal, sysio.token isn't a whitelisted contract users have to pay to use it? sysio.token rows under accounts table is part of account creation step. Creation of new tokens and the ram consumption for that, who do we want to pay for that? Don't whitelist sysio.token would mean users policies will be expected otherwise pass WIRE for gas. If white lsited, a policy row will be needed for sysio.token. 
-        // reslimit_t reslimit2(get_self(), name("sysio").value);
-        // reslimit2.emplace(get_self(), [&](auto& row) {
-        //     row.owner = "sysio"_n;
-        //     row.net_weight = asset(0, symbol("SYS", 4)); // Set to 0 since system accounts have infinte by default
-        //     row.cpu_weight = asset(0, symbol("SYS", 4)); // Set to 0 since system accounts have infinite by default
-        //     row.ram_bytes = max_ram_bytes; // Set to max network bytes.
-        // });
-
-        // reslimit_t reslimit3(get_self(), name("sysio.token").value);
-        // reslimit3.emplace(get_self(), [&](auto& row) {
-        //     row.owner = "sysio.token"_n;
-        //     row.net_weight = asset(0, symbol("SYS", 4)); // Set to 0 since system accounts have infinte by default
-        //     row.cpu_weight = asset(0, symbol("SYS", 4)); // Set to 0 since system accounts have infinite by default
-        //     row.ram_bytes = max_ram_bytes; // Set to max network bytes.
-        // });
-
-        // TODO: Might need to add a reslimit row for all system accounts? TBD
-        // TODO: Check that setting weights for CPU / NET on system accounts doesn't mess up the infinte CPU / NET mechanism.
 
         // Set default values
         state.is_active = true;
-        state.ram_byte_price = ram_byte_price;
+        state.bytes_per_unit = bytes_per_unit;
         state.network_gen = 0;
 
         // Set values to table.
         roastate.set(state, get_self());
     };
 
-    void roa::upramcost(const asset& ram_byte_price) {
+    void roa::setbyteprice(const uint64_t& bytes_per_unit) {
         require_auth(get_self());
 
         //Singelton index
@@ -67,10 +34,8 @@ namespace sysio {
 
         // Make sure ROA 'is_active' first.
         check(state.is_active, "ROA is not currently active");
-        // Ensure they are setting the price in SYS.
-        check(ram_byte_price.symbol == symbol("SYS", 4), "Ram price must be set in SYS.");
         
-        state.ram_byte_price = ram_byte_price;
+        state.bytes_per_unit = bytes_per_unit;
 
         // Set values to table.
         roastate.set(state, get_self());
@@ -89,60 +54,114 @@ namespace sysio {
         
         check(node_itr == nodeowners.end(), "This account is already registered.");
         
+        asset total_sys_allocation = get_allocation_for_tier(tier);
+
+        // Sum total allocated SYS between personal policy and sysio policy.
+        asset allocated_sys = asset(0, symbol("SYS", 4));
+        asset personal_ram_weight = asset(80, symbol("SYS", 4)); // .0080 which is allocated to personal ram usage.
+        uint64_t personal_ram_bytes = personal_ram_weight.amount() * state.bytes_per_unit;
+        allocated_sys += personal_ram_weight;
+
+        // 10% of total SYS goes to sysio to facilitate account creations and system actions.
+        asset sysio_allocation = asset(total_sys_allocation.amount / 10, total_sys_allocation.symbol); 
+        allocated_sys += sysio_allocation;
+
+        // Minimal default starting weights for personal policy.
+        asset net_cpu_weight = asset(500, symbol("SYS", 4));
+        allocated_sys += (net_cpu_weight + net_cpu_weight);
+        
         // Create a personal policy for the Node Owner.
         policies_t policies(get_self(), owner.value);
         auto pol_itr = policies.find(owner.value);
 
-        // Calculate 500 bytes for personal policy.
-        uint64_t ram_bytes = 500; // Desired RAM in bytes
-        uint64_t ram_weight_amount = ram_bytes * state.ram_byte_price.amount; // Total SYS in smallest units
+        name sysio_account = name("sysio");
+        asset zero_asset = asset(0, SYMBOL("SYS", 4));
 
+        // Get total 
         if (pol_itr == policies.end()) {
-            // No personal policy exists yet as expected.
+            // No policies exists yet as expected.
+
+            // Create a minimal default policy for self.
             policies.emplace(get_self(), [&](auto& row) {
                 row.owner = owner;
-                row.issuer = issuer;
-                row.net_weight = asset(5000, symbol("SYS", 4)); // 0.5000 SYS
-                row.cpu_weight = asset(5000, symbol("SYS", 4)); // 0.5000 SYS
-                row.ram_weight = asset(ram_weight_amount, symbol("SYS", 4));
-                row.ram_byte_price = state.ram_byte_price;
-                row.time_block = current_block_number(); // Set to current block, so they have freedom to do whatever they want with this policy.
+                row.issuer = owner;
+                row.net_weight = net_cpu_weight; // 0.0500 SYS
+                row.cpu_weight = net_cpu_weight; // 0.0500 SYS
+                row.ram_weight = personal_ram_weight;  // 0.0080 SYS
+                row.bytes_per_unit = state.bytes_per_unit;
+                row.time_block = 1; // Set to current block, so they have freedom to do whatever they want with this policy.
+            });
+
+            // Create a sysio policy, for system functions and newaccount facilitation.
+            policies.emplace(get_self(), [&](auto& row) {
+                row.owner = sysio_account;
+                row.issuer = owner;
+                row.net_weight = zero_asset;
+                row.cpu_weight = zero_asset;
+                row.ram_weight = sysio_allocation; // 10% of total allocation
+                row.bytes_per_unit = state.bytes_per_unit;
+                row.time_block = 1; // Need to lock this up, should not be allowed to remove this policy.
             });
         }
         
-        // Create or update reslimit for the owner
+        // Create or update reslimit for the owner and then set_resource_limit
         reslimit_t reslimits(get_self(), owner.value);
         auto res_itr = reslimits.find(owner.value);
+        
 
+        // TODO: Remove this check if account creation does NOT create a reslimit row. TBD after newaccount rework.
         if (res_itr == reslimits.end()) {
             reslimits.emplace(get_self(), [&](auto& row) {
                 row.owner = owner;
-                row.net_weight = asset(5000, symbol("SYS", 4)); // Same as policy net_weight
-                row.cpu_weight = asset(5000, symbol("SYS", 4)); // Same as policy cpu_weight
-                row.ram_bytes = ram_bytes; // 500 bytes
+                row.net_weight = net_cpu_weight // Same as policy net_weight
+                row.cpu_weight = net_cpu_weight // Same as policy cpu_weight
+                row.ram_bytes = personal_ram_bytes;
             });
+
+            set_resource_limit(owner, personal_ram_bytes, net_cpu_weight.amount, net_cpu_weight.amount);
         } else {
             // If reslimit already exists, add to existing values
             reslimits.modify(res_itr, get_self(), [&](auto& row) {
-                row.net_weight += asset(5000, symbol("SYS", 4)); // 0.5000 SYS
-                row.cpu_weight += asset(5000, symbol("SYS", 4)); // 0.5000 SYS
-                row.ram_bytes += ram_bytes;
+                row.net_weight += net_cpu_weight;
+                row.cpu_weight += net_cpu_weight;
+                row.ram_bytes += personal_ram_bytes;
             });
+
+            set_resource_limit(owner, res_itr->ram_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount); // Set resource limits with new totals.
         }
-        
-        asset allocated_sys = asset(0, symbol("SYS", 4));
-        allocated_sys += asset(5000, symbol("SYS", 4)); // 0.5000 SYS net_weight
-        allocated_sys += asset(5000, symbol("SYS", 4)); // 0.5000 SYS cpu_weight
-        allocated_sys += asset(ram_weight_amount, symbol("SYS", 4)); // ram_weight
+
+        // Create or update reslimit for sysio and then set_resource_limit
+        reslimit_t sysreslimit(get_self(), sysio_account.value);
+        auto sys_res_itr = reslimits2.find(sysio_account);
+        // Calculate in bytes how much sysio gets.
+        uint64_t sysio_bytes = sysio_allocation * state.bytes_per_unit;
+
+        // TODO: Remove this check if account creation does NOT create a reslimit row. TBD after newaccount rework.
+        if (sys_res_itr == reslimits.end()) {
+            sysreslimit.emplace(get_self(), [&](auto& row) {
+                row.owner = sysio_account;
+                row.net_weight = net_cpu_weight // Same as policy net_weight
+                row.cpu_weight = net_cpu_weight // Same as policy cpu_weight
+                row.ram_bytes = sysio_bytes; // 500 bytes
+            });
+
+            set_resource_limit(sysio_account, sysio_bytes, net_cpu_weight.amount, net_cpu_weight.amount);
+        } else {
+            // If reslimit already exists, add to existing values
+            sysreslimit.modify(sys_res_itr, get_self(), [&](auto& row) {
+                row.ram_bytes += sysio_bytes;
+            });
+
+            set_resource_limit(sysio_account, sys_res_itr->ram_bytes, sys_res_itr->net_weight.amount, sys_res_itr->cpu_weight.amount); // Set resource limits with new totals.
+        }
         
         nodeowners.emplace(get_self(), [&](auto& row) {
             row.owner = owner;
             row.tier = tier;
-            row.total_sys = get_allocation_for_tier(tier);
+            row.total_sys = total_sys_allocation;
             row.allocated_sys = allocated_sys;
             row.network_gen = state.network_gen;
         });
-
 
         // TODO: Notify Council contract
     };
