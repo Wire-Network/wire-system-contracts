@@ -9,16 +9,16 @@ icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
 
 {{$action.account}} activates the ROA contract and sets sysio.roa's {{max_ram_bytes}} to the networks capacity of RAM. It also sets the price of 1 byte of RAM {{ram_byte_price}}. Finally it adds system accounts to the reslimit table.
 
-<h1 class="contract">upramcost</h1>
+<h1 class="contract">setbyteprice</h1>
 
 ---
 spec_version: "0.2.0"
 title: Updates the price of RAM
-summary: 'Sets our ram_byte_price to {{nowrap ram_byte_price}}'
+summary: 'Sets our bytes_per_unit to {{nowrap bytes_per_unit}}'
 icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
 ---
 
-{{$action.account}} Updates the price of ram to {{ram_byte_price}}
+{{$action.account}} Updates the price of ram to {{bytes_per_unit}}
 
 <h1 class="contract">regnodeowner</h1>
 

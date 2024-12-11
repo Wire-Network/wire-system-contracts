@@ -162,14 +162,14 @@ namespace sysio {
                 row.cpu_weight = net_cpu_weight;
                 row.ram_bytes = personal_ram_bytes;
             });
-            set_resource_limits(owner, personal_ram_bytes, net_cpu_weight.amount, net_cpu_weight.amount);
+            // set_resource_limits(owner, personal_ram_bytes, net_cpu_weight.amount, net_cpu_weight.amount);
         } else {
             reslimits.modify(res_itr, get_self(), [&](auto& row) {
                 row.net_weight += net_cpu_weight;
                 row.cpu_weight += net_cpu_weight;
                 row.ram_bytes += personal_ram_bytes;
             });
-            set_resource_limits(owner, res_itr->ram_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount);
+            // set_resource_limits(owner, res_itr->ram_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount);
         }
 
         // Sysio reslimit
@@ -183,7 +183,7 @@ namespace sysio {
         });
 
         // Update the RAM allocation, sysio is a system account so -1, -1 for net and cpu to maintain unlimited.
-        set_resource_limits(sysio_account, sysio_res_itr->ram_bytes, -1, -1);
+        // set_resource_limits(sysio_account, sysio_res_itr->ram_bytes, -1, -1);
 
         // Finally, record the node owner entry with the new fields
         nodeowners.emplace(get_self(), [&](auto& row) {
@@ -265,13 +265,13 @@ namespace sysio {
         }
 
         // After updating resource limits, set the system resource limits
-        auto updated_res_itr = reslimit.find(owner.value);
-        if (sysio_acct) {
-            // Infinite CPU/NET for sysio accounts
-            set_resource_limits(owner, updated_res_itr->ram_bytes, -1, -1);
-        } else {
-            set_resource_limits(owner, updated_res_itr->ram_bytes, updated_res_itr->net_weight.amount, updated_res_itr->cpu_weight.amount);
-        }
+        // auto updated_res_itr = reslimit.find(owner.value);
+        // if (sysio_acct) {
+        //     // Infinite CPU/NET for sysio accounts
+        //     set_resource_limits(owner, updated_res_itr->ram_bytes, -1, -1);
+        // } else {
+        //     set_resource_limits(owner, updated_res_itr->ram_bytes, updated_res_itr->net_weight.amount, updated_res_itr->cpu_weight.amount);
+        // }
 
         // Add the new policy
         policies.emplace(get_self(), [&](auto& row) {
@@ -360,13 +360,13 @@ namespace sysio {
             row.ram_bytes += (uint64_t)ram_bytes_to_allocate;
         });
 
-        auto updated_res_itr = reslimit.find(owner.value);
-        if (sysio_acct) {
-            // sysio accounts remain infinite CPU/NET
-            set_resource_limits(owner, updated_res_itr->ram_bytes, -1, -1);
-        } else {
-            set_resource_limits(owner, updated_res_itr->ram_bytes, updated_res_itr->net_weight.amount, updated_res_itr->cpu_weight.amount);
-        }
+        // auto updated_res_itr = reslimit.find(owner.value);
+        // if (sysio_acct) {
+        //     // sysio accounts remain infinite CPU/NET
+        //     set_resource_limits(owner, updated_res_itr->ram_bytes, -1, -1);
+        // } else {
+        //     set_resource_limits(owner, updated_res_itr->ram_bytes, updated_res_itr->net_weight.amount, updated_res_itr->cpu_weight.amount);
+        // }
     };
 
     void roa::extendpolicy(const name& owner, const name& issuer, const uint32_t& new_time_block) {
@@ -425,4 +425,4 @@ namespace sysio {
     }
 } // namespace roa
 
-SYSIO_DISPATCH(sysio::roa, (reducepolicy));
+// SYSIO_DISPATCH(sysio::roa, (reducepolicy));

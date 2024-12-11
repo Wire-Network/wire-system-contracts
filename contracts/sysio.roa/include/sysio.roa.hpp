@@ -6,6 +6,7 @@
 #include <sysio/asset.hpp>
 #include <sysio/dispatcher.hpp> // For SYSIO_DISPATCH of native action
 #include <sysio/privileged.hpp> 
+#include <sysio/string.hpp> // Need for is_sysio_account?
 
 /**
  *  ---- General TODOs ----
