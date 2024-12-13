@@ -28,9 +28,9 @@ defund
 delband
 delegatebw
 deleteauth
-eosio
-eosiosystem
-EOSLIB
+sysio
+sysiosystem
+SYSLIB
 fundcpuloan
 fundnetloan
 gstate

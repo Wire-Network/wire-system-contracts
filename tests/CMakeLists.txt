@@ -1,27 +1,27 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(EOSIO_VERSION_MIN "3.1")
-set(EOSIO_VERSION_SOFT_MAX "4.1")
-# set(EOSIO_VERSION_HARD_MAX "")
+set(SYSIO_VERSION_MIN "3.1")
+set(SYSIO_VERSION_SOFT_MAX "4.1")
+# set(SYSIO_VERSION_HARD_MAX "")
 
 find_package(leap REQUIRED)
 
 # Check the version of Leap
 if(SYSTEM_ENABLE_LEAP_VERSION_CHECK)
   set(VERSION_MATCH_ERROR_MSG "")
-  eosio_check_version(VERSION_OUTPUT "${EOSIO_VERSION}" "${EOSIO_VERSION_MIN}" "${EOSIO_VERSION_SOFT_MAX}"
-                      "${EOSIO_VERSION_HARD_MAX}" VERSION_MATCH_ERROR_MSG)
+  sysio_check_version(VERSION_OUTPUT "${SYSIO_VERSION}" "${SYSIO_VERSION_MIN}" "${SYSIO_VERSION_SOFT_MAX}"
+                      "${SYSIO_VERSION_HARD_MAX}" VERSION_MATCH_ERROR_MSG)
   if(VERSION_OUTPUT STREQUAL "MATCH")
-    message(STATUS "Using Leap version ${EOSIO_VERSION}")
+    message(STATUS "Using Leap version ${SYSIO_VERSION}")
   elseif(VERSION_OUTPUT STREQUAL "WARN")
     message(
       WARNING
-        "Using Leap version ${EOSIO_VERSION} even though it exceeds the maximum supported version of ${EOSIO_VERSION_SOFT_MAX}; continuing with configuration, however build may fail.\nIt is recommended to use Leap version ${EOSIO_VERSION_SOFT_MAX}.x"
+        "Using Leap version ${SYSIO_VERSION} even though it exceeds the maximum supported version of ${SYSIO_VERSION_SOFT_MAX}; continuing with configuration, however build may fail.\nIt is recommended to use Leap version ${SYSIO_VERSION_SOFT_MAX}.x"
     )
   else() # INVALID OR MISMATCH
     message(
       FATAL_ERROR
-        "Found Leap version ${EOSIO_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use Leap version ${EOSIO_VERSION_SOFT_MAX}.x"
+        "Found Leap version ${SYSIO_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use Leap version ${SYSIO_VERSION_SOFT_MAX}.x"
     )
   endif()
 endif()
@@ -34,7 +34,7 @@ include(CTest) # eliminates DartConfiguration.tcl errors at test runtime
 enable_testing()
 # build unit test executable
 file(GLOB UNIT_TESTS "*.cpp" "*.hpp") # find all unit test suites
-add_eosio_test_executable(unit_test ${UNIT_TESTS}) # build unit tests as one executable
+add_sysio_test_executable(unit_test ${UNIT_TESTS}) # build unit tests as one executable
 # mark test suites for execution
 foreach(TEST_SUITE ${UNIT_TESTS}) # create an independent target for each test suite
   execute_process(

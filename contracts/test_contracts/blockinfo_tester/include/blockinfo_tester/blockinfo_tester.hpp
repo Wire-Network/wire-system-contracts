@@ -7,10 +7,10 @@
 
 #else
 
-#include <eosio/time.hpp>
-#include <eosio/varint.hpp>
+#include <sysio/time.hpp>
+#include <sysio/varint.hpp>
 
-#include <eosio.system/block_info.hpp>
+#include <sysio.system/block_info.hpp>
 
 #endif
 
@@ -27,8 +27,8 @@ using varint     = fc::unsigned_int;
 
 #else
 
-using time_point = eosio::time_point;
-using varint     = eosio::unsigned_int;
+using time_point = sysio::time_point;
+using varint     = sysio::unsigned_int;
 
 #endif
 
@@ -56,7 +56,7 @@ struct block_batch_info
 
 #else
 
-using eosiosystem::block_info::block_batch_info;
+using sysiosystem::block_info::block_batch_info;
 
 #endif
 
@@ -82,7 +82,7 @@ struct latest_block_batch_info_result
 
 #ifndef TEST_INCLUDE
 
-   EOSLIB_SERIALIZE(latest_block_batch_info_result, (result)(error_code))
+   SYSLIB_SERIALIZE(latest_block_batch_info_result, (result)(error_code))
 
 #endif
 };

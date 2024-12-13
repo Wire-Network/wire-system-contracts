@@ -1,21 +1,21 @@
-#include <eosio/action.hpp>
-#include <eosio/contract.hpp>
-#include <eosio/name.hpp>
-#include <eosio/permission.hpp>
+#include <sysio/action.hpp>
+#include <sysio/contract.hpp>
+#include <sysio/name.hpp>
+#include <sysio/permission.hpp>
 #include <vector>
 
-/// `eosio.code` is a virtual permission (there is no private or public
-/// key associated with it). Therefore, this test tests how `eosio.msig`
+/// `sysio.code` is a virtual permission (there is no private or public
+/// key associated with it). Therefore, this test tests how `sysio.msig`
 /// contract reacts to a smart contract submitting a proposal and
 /// approving/unnapproving itself.
-class [[eosio::contract]]
-sendinline : public eosio::contract {
+class [[sysio::contract]]
+sendinline : public sysio::contract {
 public:
    using contract::contract;
 
-   [[eosio::action]]
-   void send( eosio::name contract, eosio::name action_name, std::vector<eosio::permission_level> auths, std::vector<char> payload) {
-      eosio::action act;
+   [[sysio::action]]
+   void send( sysio::name contract, sysio::name action_name, std::vector<sysio::permission_level> auths, std::vector<char> payload) {
+      sysio::action act;
       act.account = contract;
       act.name = action_name;
       act.authorization = auths;
