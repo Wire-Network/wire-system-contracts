@@ -1471,7 +1471,7 @@ typedef sysio::multi_index<"domains"_n, domain_info,
 
       private:
          // Implementation details:
-
+         // TODO: Do we need to adjust where this is getting core symbol if we remove REX pieces?
          static symbol get_core_symbol( const rammarket& rm ) {
             auto itr = rm.find(ramcore_symbol.raw());
             check(itr != rm.end(), "system contract must first be initialized");

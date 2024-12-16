@@ -459,7 +459,6 @@ namespace sysiosystem {
         }
     }
 
-
    // user_resources_table  userres( get_self(), new_account_name.value );
 
    // userres.emplace( new_account_name, [&]( auto& res ) {
