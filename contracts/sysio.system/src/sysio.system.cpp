@@ -432,45 +432,58 @@ namespace sysiosystem {
     *  who can create accounts with the creator's name as a suffix.
     *
     */
-   void native::newaccount( const name&       creator,
-                            const name&       new_account_name,
-                            ignore<authority> owner,
-                            ignore<authority> active ) {
+  void native::newaccount( const name& creator,
+                         const name& new_account_name,
+                         ignore<authority> owner,
+                         ignore<authority> active ) {
+    if (creator != get_self()) {
+        uint64_t tmp = new_account_name.value >> 4;
+        bool has_dot = false;
 
-      if( creator != get_self() ) {
-         uint64_t tmp = new_account_name.value >> 4;
-         bool has_dot = false;
-
-         for( uint32_t i = 0; i < 12; ++i ) {
-           has_dot |= !(tmp & 0x1f);
-           tmp >>= 5;
-         }
-         if( has_dot ) { // or is less than 12 characters
+        for (uint32_t i = 0; i < 12; ++i) {
+            has_dot |= !(tmp & 0x1f);
+            tmp >>= 5;
+        }
+        if (has_dot) {
             auto suffix = new_account_name.suffix();
-            if( suffix == new_account_name ) {
-               name_bid_table bids(get_self(), get_self().value);
-               auto current = bids.find( new_account_name.value );
-               check( current != bids.end(), "no active bid for name" );
-               check( current->high_bidder == creator, "only highest bidder can claim" );
-               check( current->high_bid < 0, "auction for name is not closed yet" );
-               bids.erase( current );
-               require_recipient(name("domainmarket"));
+            if (suffix == new_account_name) {
+                name_bid_table bids(get_self(), get_self().value);
+                auto current = bids.find(new_account_name.value);
+                check(current != bids.end(), "no active bid for name");
+                check(current->high_bidder == creator, "only highest bidder can claim");
+                check(current->high_bid < 0, "auction for name is not closed yet");
+                bids.erase(current);
             } else {
-               check( creator == suffix, "only suffix may create this account" );
+                check(creator == suffix, "only suffix may create this account");
             }
-         }
-      }
+        }
+    }
 
-      user_resources_table  userres( get_self(), new_account_name.value );
 
-      userres.emplace( new_account_name, [&]( auto& res ) {
-        res.owner = new_account_name;
-        res.net_weight = asset( 0, system_contract::get_core_symbol() );
-        res.cpu_weight = asset( 0, system_contract::get_core_symbol() );
-      });
+   // user_resources_table  userres( get_self(), new_account_name.value );
 
-      set_resource_limits( new_account_name, 0, 0, 0 );
-   }
+   // userres.emplace( new_account_name, [&]( auto& res ) {
+   //   res.owner = new_account_name;
+   //   res.net_weight = asset( 0, system_contract::get_core_symbol() );
+   //   res.cpu_weight = asset( 0, system_contract::get_core_symbol() );
+   // });
+
+
+    // Add the account to the domains table
+    domains_t domains(get_self(), get_self().value);
+    auto existing = domains.find(new_account_name.value);
+    check(existing == domains.end(), "Account already exists in the domains table");
+
+    domains.emplace(get_self(), [&](auto& row) {
+        row.key = domains.available_primary_key();
+        row.account_name = new_account_name;
+        row.creator = creator;
+        row.created_at = time_point(current_time_point());
+    });
+
+    // Set initial resource limits for the new account
+    set_resource_limits(new_account_name, 0, 0, 0);
+}
 
    void native::setabi( const name& acnt, const std::vector<char>& abi,
                         const binary_extension<std::string>& memo ) {
