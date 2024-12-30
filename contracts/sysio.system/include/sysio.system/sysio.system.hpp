@@ -1204,7 +1204,7 @@ namespace sysiosystem {
           * @pre If proxy is set then proxy account must exist and be registered as a proxy
           * @pre Every listed producer or proxy must have been previously registered
           * @pre Voter must authorize this action
-          * @pre Voter must have previously staked some EOS for voting
+          * @pre Voter must have previously staked some SYS for voting
           * @pre Voter->staked must be up to date
           *
           * @post Every producer previously voted for will have vote reduced by previous vote weight

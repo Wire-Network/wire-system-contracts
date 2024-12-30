@@ -14,11 +14,11 @@ cd CONTRACTS_DIR
 Pull the source
 
 ```sh
-git clone https://github.com/eosnetworkfoundation/eos-system-contracts --branch release/3.1 --single-branch
+git clone https://github.com/eosnetworkfoundation/wire-system-contracts --branch release/3.1 --single-branch
 ```
 
 ```sh
-cd eos-system-contracts/contracts/sysio.token
+cd wire-system-contracts/contracts/sysio.token
 ```
 
 ## Step 2: Create Account for Contract
@@ -27,7 +27,7 @@ cd eos-system-contracts/contracts/sysio.token
 | You may have to unlock your wallet first!
 
 ```shell
-cleos create account sysio sysio.token EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
+clio create account sysio sysio.token SYS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
 ```
 
 ## Step 3: Compile the Contract
@@ -40,7 +40,7 @@ sysio-cpp -I include -o sysio.token.wasm src/sysio.token.cpp --abigen
 
 ```shell
 
-cleos set contract sysio.token CONTRACTS_DIR/eos-system-contracts/contracts/sysio.token --abi sysio.token.abi -p sysio.token@active
+clio set contract sysio.token CONTRACTS_DIR/wire-system-contracts/contracts/sysio.token --abi sysio.token.abi -p sysio.token@active
 ```
 
 Result should look similar to the one below:
@@ -57,7 +57,7 @@ warning: transaction executed locally, but may not be confirmed by the network y
 ## Step 5: Create the Token
 
 ```shell
-cleos push action sysio.token create '[ "sysio", "1000000000.0000 NEWT"]' -p sysio.token@active
+clio push action sysio.token create '[ "sysio", "1000000000.0000 NEWT"]' -p sysio.token@active
 ```
 
 Result should look similar to the one below:
@@ -70,7 +70,7 @@ executed transaction: 0e49a421f6e75f4c5e09dd738a02d3f51bd18a0cf31894f68d335cd70d
 An alternate approach uses named arguments:
 
 ```shell
-cleos push action sysio.token create '{"issuer":"sysio", "maximum_supply":"1000000000.0000 NEWT"}' -p sysio.token@active
+clio push action sysio.token create '{"issuer":"sysio", "maximum_supply":"1000000000.0000 NEWT"}' -p sysio.token@active
 ```
 
 Result should look similar to the one below:
@@ -87,7 +87,7 @@ This command created a new token `NEWT` with a precision of 4 decimals and a max
 The issuer can issue new tokens to the issuer account in our case `sysio`.
 
 ```sh
-cleos push action sysio.token issue '[ "sysio", "100.0000 NEWT", "memo" ]' -p sysio@active
+clio push action sysio.token issue '[ "sysio", "100.0000 NEWT", "memo" ]' -p sysio@active
 ```
 
 Result should look similar to the one below:
@@ -103,7 +103,7 @@ warning: transaction executed locally, but may not be confirmed by the network y
 Now that account `sysio` has been issued tokens, transfer some of them to account `bob`.
 
 ```shell
-cleos push action sysio.token transfer '[ "sysio", "bob", "25.0000 NEWT", "m" ]' -p sysio@active
+clio push action sysio.token transfer '[ "sysio", "bob", "25.0000 NEWT", "m" ]' -p sysio@active
 ```
 
 Result should look similar to the one below:
@@ -116,10 +116,9 @@ executed transaction: 60d334850151cb95c35fe31ce2e8b536b51441c5fd4c3f2fea98edcc6d
 warning: transaction executed locally, but may not be confirmed by the network yet         ]
 ```
 
-Now check if "bob" got the tokens using [cleos get currency balance](https://docs.eosnetwork.com/leap/latest/cleos/command-reference/get/currency-balance)
-
+Now check if "bob" got the tokens using [clio get currency balance](https://docs.wire.network/docs/api-reference/tooling/clio/command-reference/get/currency-balance)
 ```shell
-cleos get currency balance sysio.token bob NEWT
+clio get currency balance sysio.token bob NEWT
 ```
 
 Result:
@@ -131,7 +130,7 @@ Result:
 Check "sysio's" balance, notice that tokens were deducted from the account
 
 ```shell
-cleos get currency balance sysio.token sysio NEWT
+clio get currency balance sysio.token sysio NEWT
 ```
 
 Result:

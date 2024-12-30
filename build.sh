@@ -19,7 +19,7 @@ if [ $# -ne 0 ]; then
         CDT_INSTALL_DIR=$(realpath $OPTARG)
       ;;
       l )
-        LEAP_BUILD_DIR=$(realpath $OPTARG)
+        SYSIO_BUILD_DIR=$(realpath $OPTARG)
         BUILD_TESTS=ON
       ;;
       h )
@@ -40,19 +40,19 @@ if [ $# -ne 0 ]; then
   done
 fi
 
-LEAP_DIR_CMAKE_OPTION=''
+SYSIO_DIR_CMAKE_OPTION=''
 
 if [[ "${BUILD_TESTS}" == "ON" ]]; then
-  if [[ ! -f "$LEAP_BUILD_DIR/lib/cmake/leap/leap-config.cmake" ]]; then
-    echo "Invalid path to Leap build directory: $LEAP_BUILD_DIR"
+  if [[ ! -f "$SYSIO_BUILD_DIR/lib/cmake/sysio/sysio-config.cmake" ]]; then
+    echo "Invalid path to Leap build directory: $SYSIO_BUILD_DIR"
     echo "Leap build directory is required to build tests. If you do not wish to build tests, leave off the -l option."
     echo "Cannot proceed. Exiting..."
     exit 1;
   fi
 
-  echo "Using Leap build directory at: $LEAP_BUILD_DIR"
+  echo "Using Leap build directory at: $SYSIO_BUILD_DIR"
   echo ""
-  LEAP_DIR_CMAKE_OPTION="-Dleap_DIR=${LEAP_BUILD_DIR}/lib/cmake/leap"
+  SYSIO_DIR_CMAKE_OPTION="-Dsysio_DIR=${SYSIO_BUILD_DIR}/lib/cmake/sysio"
 fi
 
 CDT_DIR_CMAKE_OPTION=''
@@ -73,12 +73,12 @@ else
   CDT_DIR_CMAKE_OPTION="-Dcdt_DIR=${CDT_INSTALL_DIR}/lib/cmake/cdt"
 fi
 
-printf "\t=========== Building eos-system-contracts ===========\n\n"
+printf "\t=========== Building wire-system-contracts ===========\n\n"
 RED='\033[0;31m'
 NC='\033[0m'
 CPU_CORES=$(getconf _NPROCESSORS_ONLN)
 mkdir -p build
 pushd build &> /dev/null
-cmake -DBUILD_TESTS=${BUILD_TESTS} ${LEAP_DIR_CMAKE_OPTION} ${CDT_DIR_CMAKE_OPTION} ../
+cmake -DBUILD_TESTS=${BUILD_TESTS} ${SYSIO_DIR_CMAKE_OPTION} ${CDT_DIR_CMAKE_OPTION} ../
 make -j $CPU_CORES
 popd &> /dev/null

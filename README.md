@@ -1,8 +1,8 @@
-# EOS system contracts
+# Wire system contracts
 
-EOS system contracts are a collection of contracts specifically designed for the EOS blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol, the protocol on which EOS blockchain is built on.
+Wire system contracts are a collection of contracts specifically designed for the Wire blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol, the protocol on which Wire blockchain is built on.
 
-The Antelope protocol includes capabilities such as:
+Current capabilities are:
 
 * an accounts and permissions system which enables a flexible permission system that allows authorization authority over specific actions in a transaction to be satisfied by the appropriate combination of signatures;
 * a consensus algorithm to propose and finalize blocks by a set of active block producers that can be arbitrarily selected by privileged smart contracts running on the blockchain;
@@ -32,12 +32,12 @@ The collection of system contracts consists of the following individual contract
 
 ## Repository organization
 
-The `main` branch contains the latest state of development; do not use this for production. Refer to the [releases page](https://github.com/eosnetworkfoundation/eos-system-contracts/releases) for current information on releases, pre-releases, and obsolete releases as well as the corresponding tags for those releases.
+The `main` branch contains the latest state of development; do not use this for production. Refer to the [releases page](https://github.com/eosnetworkfoundation/wire-system-contracts/releases) for current information on releases, pre-releases, and obsolete releases as well as the corresponding tags for those releases.
 ## Supported Operating Systems
 
 [CDT](https://github.com/AntelopeIO/cdt) is required to build contracts. Any operating systems supported by CDT is sufficient to build the system contracts.
 
-To build and run the tests as well, [Leap](https://github.com/AntelopeIO/leap) is also required as a dependency, which may have its further restrictions on supported operating systems.
+To build and run the tests as well, [Leap](https://github.com/AntelopeIO/sysio) is also required as a dependency, which may have its further restrictions on supported operating systems.
 
 ## Building
 
@@ -55,9 +55,9 @@ Alternatively, you can build CDT from source. Please refer to the guide in the [
 
 The Leap dependency is optional. It is only needed if you wish to also build the tests using the `BUILD_TESTS` CMake flag.
 
-Unfortunately, it is not currently possible to satisfy the contract testing dependencies through the Leap packages made available from the [Leap releases page](https://github.com/AntelopeIO/leap/releases). So if you want to build the contract tests, you will first need to build Leap from source.
+Unfortunately, it is not currently possible to satisfy the contract testing dependencies through the Leap packages made available from the [Leap releases page](https://github.com/AntelopeIO/sysio/releases). So if you want to build the contract tests, you will first need to build Leap from source.
 
-Please refer to the guide in the [Leap README](https://github.com/AntelopeIO/leap#building-from-source) for instructions on how to do this. If you choose to go with building Leap from source, please keep the path to the build directory in the shell environment variable `LEAP_BUILD_PATH` for later use when building the system contracts.
+Please refer to the guide in the [Leap README](https://github.com/AntelopeIO/sysio#building-from-source) for instructions on how to do this. If you choose to go with building Leap from source, please keep the path to the build directory in the shell environment variable `SYSIO_BUILD_PATH` for later use when building the system contracts.
 
 ### Build system contracts
 
@@ -72,7 +72,7 @@ Build system contracts with tests using Leap built from source and with installe
 ```shell
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dleap_DIR="${LEAP_BUILD_PATH}/lib/cmake/leap" ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dsysio_DIR="${SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
 make -j $(nproc)
 ```
 
@@ -84,7 +84,7 @@ make -j $(nproc)
 ```shell
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dleap_DIR="${LEAP_BUILD_PATH}/lib/cmake/leap" ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dsysio_DIR="${SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
 make -j $(nproc)
 ```
 
