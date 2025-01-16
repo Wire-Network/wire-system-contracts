@@ -765,6 +765,17 @@ namespace sysiosystem {
          void setalimits( const name& account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight );
 
          /**
+          * Set producers action, sets a new list of active producers, by proposing a schedule change, once the block that
+          * contains the proposal becomes irreversible, the schedule is promoted to "pending"
+          * automatically. Once the block that promotes the schedule is irreversible, the schedule will
+          * become "active".
+          *
+          * @param schedule - New list of active producers to set
+          */
+         [[sysio::action]]
+         void setprods( const std::vector<sysio::producer_authority>& schedule );
+         
+         /**
           * Set account RAM limits action, which sets the RAM limits of an account
           *
           * @param account - name of the account whose resource limit to be set,

@@ -64,8 +64,8 @@ namespace sysio {
         check(sysioreslimit.find(sys_account.value) == sysioreslimit.end(), "sysio reslimit already exists.");
         sysioreslimit.emplace(get_self(), [&](auto& row) {
             row.owner = sys_account;
-            row.net_weight = asset(0, total_sys.symbol);
-            row.cpu_weight = asset(0, total_sys.symbol);
+            row.net_weight = asset(56671995, total_sys.symbol);
+            row.cpu_weight = asset(56671995, total_sys.symbol);
             row.ram_bytes = sysio_ram_bytes;
         });
 

@@ -252,6 +252,11 @@ namespace sysiosystem {
       set_resource_limits( account, ram, net, cpu );
    }
 
+   void system_contract::setprods( const std::vector<sysio::producer_authority>& schedule ) {
+      require_auth( get_self() );
+      set_proposed_producers( schedule );
+   }
+
    void system_contract::setacctram( const name& account, const std::optional<int64_t>& ram_bytes ) {
       require_auth( get_self() );
 
