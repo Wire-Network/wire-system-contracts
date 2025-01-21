@@ -395,6 +395,183 @@ namespace sysio {
         // ---- Native Action, see chain > sysio_contract.cpp in core ---- 
     };
 
+    void roa::initnodereg(const name& owner) {
+
+        require_auth(permission_level{owner, "auth.ext"_n});
+
+        roastate_t roastate(get_self(), get_self().value);
+        auto state = roastate.get();
+        check(state.is_active, "ROA is not active yet");
+
+        nodeowners_t nodeowners(get_self(), state.network_gen);
+        auto node_itr = nodeowners.find(owner.value);
+        check(node_itr == nodeowners.end(), "This account is already registered.");
+
+        nodeownerreg_t nodereg(get_self(), state.network_gen);
+        auto nodereg_itr = nodereg.find(owner.value);
+        // Check this one if trx cancelled and they try again, maybe not able to register again
+        // Is it better to just check status ? 
+        // check(nodereg_itr == nodereg.end(),"Registration already initialized");
+        
+        // TODO if rejected just modify
+        if (nodereg_itr != nodereg.end()) {
+            check(nodereg_itr->status == 3, "A registration is already pending or confirmed.");
+
+            //  TODO: Modify row
+            nodereg.modify(nodereg_itr,get_self(), [&](auto &row){
+                row.status = 0;
+                row.trx_id = {};
+                row.trx_signature = {};
+                row.block_num = 0;
+            });
+
+        } else {
+            // ToDo -> Add to nodeownerreg table  
+            nodereg.emplace(get_self(), [&](auto &row){
+                row.owner = owner;
+                row.status = 0;
+                row.trx_id = {};
+                row.trx_signature = {};
+                row.tier = 0;
+                row.block_num = 0;
+            });
+        }
+    };
+
+    // TODO:  CHECK BYTES -> WNS::BYTES >>>>
+    // TODO signature needs to be bytes or sysio::signature ???
+    // TODO: Preform check on signature + msgDigest
+    void roa::setpending(const name& owner, const uint8_t& tier ,const bytes& trxId, const uint128_t& blockNum, const bytes& sig, const checksum256& msgDigest ) {
+        
+        require_auth(permission_level{owner, "auth.ext"_n});
+    
+        roastate_t roastate(get_self(), get_self().value);
+        auto state = roastate.get();
+        check(state.is_active, "ROA is not active yet");
+
+        nodeownerreg_t nodereg(get_self(), state.network_gen);
+        auto nodereg_itr = nodereg.find(owner.value);
+        // Checks if already started init
+        check(nodereg_itr != nodereg.end(),"Registration not initialized yet");
+
+        // TODO: If Tier 4 or 5s need to be able to register, adjust our conditional
+        check(tier > 0 && tier <= 3 , "Tier level must be between 1 and 3");
+
+        // TODO =>  
+        check(nodereg_itr->status == 0, "Registration status must be 0 ( INTENT ) to set PENDING.");
+
+        // TODO => Check trx id 
+        check(trxId.size() == 32, "Invalid Transaction Id, must be length of 32.");
+
+        // TODO: IF we DO need msg_digest, you need to do a check on the signature + msg_digest right here.
+        // check_eth_trx(trxId,owner,sig,msgDigest);
+        // TODO: THIS IS WHERE WE'D USE VERIFYTRX
+        // verifytrx(owner,trxId);
+
+        // TODO => If trx is good update the status and nodeownerreg table 
+        nodereg.modify(nodereg_itr,get_self(),[&](auto &row){
+            row.status = 1; 
+            row.trx_id = trxId;
+            row.trx_signature = sig;
+            row.tier = tier; 
+            row.block_num = blockNum;
+        // ! NOTE: might need to add require_receipient(account_name) call to notify validators of a new pending transaction
+        });
+
+    };
+
+    // bool roa::verifytrx(const name& owner, const bytes& trxId){
+
+    //     // TODO -> Require authorization for validator !!!
+    //     require_auth(permission_level{owner, "auth.ext"_n});
+
+        
+    //     roastate_t roastate(get_self(), get_self().value);
+    //     auto state = roastate.get();
+    //     check(state.is_active, "ROA is not active yet");
+
+    //     nodeowners_t nodeowners(get_self(), state.network_gen);
+    //     auto node_itr = nodeowners.find(owner.value);
+    //     check(node_itr == nodeowners.end(), "This account is already registered.");
+
+    //     nodeownerreg_t nodereg(get_self(), state.network_gen);
+    //     auto nodereg_itr = nodereg.find(owner.value);
+    //     check(nodereg_itr != nodereg.end(), "No registration record found for this user.");
+
+    //     // TODO Actions that verifies trx ID !
+
+    //     transaction is approved
+
+    //     //? JUST AN EXAMPLE !! 
+    //     bool deposit_okay = (trxId.size() > 0);
+    //     if(deposit_okay){
+    //         // ACTIONS
+
+    //         finalizereg(owner,nodereg_itr->token_id);
+    //         return true;
+    //     } else {
+    //         // if invalid
+    //         // TODO Change status to REJECTED 
+    //         nodereg.modify(nodereg_itr, get_self(), [&](auto &row){
+    //             row.status = depositState::REJECTED;
+    //         });
+
+    //         // TODO Make sure return False
+    //         return false;
+    //     }
+
+    
+    // };
+    // TODO -> Make sure validator is checking nodeownerreg table, when status changed to PENDING, validator needs to check the information they provided is matching with the trx they did on Ethereum
+    // TODO -> VALIDATOR is going to push this action if the trx is approved or rejected
+    // Status:  0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
+    void roa::finalizereg(const name& owner,const uint8_t& status) {
+
+
+        // TODO -> Require authorization for validator !!!
+        require_auth(permission_level{owner, "auth.ext"_n});
+        
+
+        roastate_t roastate(get_self(), get_self().value);
+        auto state = roastate.get();
+        check(state.is_active, "ROA is not active yet");
+
+        nodeowners_t nodeowners(get_self(), state.network_gen);
+        auto node_itr = nodeowners.find(owner.value);
+        check(node_itr == nodeowners.end(), "This account is already registered.");
+
+        nodeownerreg_t nodereg(get_self(), state.network_gen);
+        auto nodereg_itr = nodereg.find(owner.value);
+
+        // TODO Check if there is a record for this owner
+        check(nodereg_itr != nodereg.end(),"No registration record found !");
+
+        // TODO Check status -> Make sure it's pending
+        check(nodereg_itr->status == 1, "Registration is not in 1 ( PENDING ) state.");
+
+        //TODO => VERIFY TRANSACTION HERE 
+
+        if(status == 2){
+            
+            // TODO => Update nodeowners table (add)
+            regnodeowner(owner,nodereg_itr->tier);
+
+             // TODO => Update the status here 
+            nodereg.modify(nodereg_itr,get_self(),[&](auto &row){
+                row.status = 2;
+            });
+
+        } else {
+            nodereg.modify(nodereg_itr,get_self(),[&](auto &row){
+                row.status = 3;
+            });
+        }
+
+    
+    };
+
+
+
     // ---- Private Helper Function ----
     asset roa::get_allocation_for_tier(uint8_t tier) {
         // Retrieve the current roastate
@@ -432,3 +609,40 @@ namespace sysio {
 } // namespace roa
 
 // SYSIO_DISPATCH(sysio::roa, (reducepolicy));
+
+    // TODO bytes or roa::bytes || Added from settlewns
+//     void roa::check_eth_trx(const bytes &trxId, const name& signer, const sysio::signature &sig, const checksum256 &msgDigest) {
+   
+//     // Make sure transaction id is the proper length.
+//     check(trx_id.size() == 32, "Transaction id must be 32 bytes long.");
+
+//     // Verify the signature passed was indeed signed by the private key associated with foundTrx->to. And that all parameters match our auth.msg's links table.
+//     sysio::public_key pub_key = sysio::recover_key(msgDigest, sig);
+
+//     // Get reference to links table and find the row associated with foundTrx->to.
+//     links_t links("auth.msg"_n, "auth.msg"_n.value);
+//     auto linkIndex = links.get_index<"byname"_n>();
+//     auto foundLink = linkIndex.find(signer.value);
+
+//     check(foundLink != linkIndex.end(), "No link found for user.");
+
+//     const bytes recovered_key_bytes = pub_key_bytes(pub_key);
+//     // Compare the recovered key to the public key associated with the account.
+//     std::string recovered_str(recovered_key_bytes.begin(), recovered_key_bytes.end());
+//     std::string found_str(foundLink->comp_key.begin(), foundLink->comp_key.end());
+
+//     check(foundLink->comp_key == recovered_key_bytes, "Signature does not match the public key associated with the account. "+found_str+" vs " + recovered_str);
+// }
+
+    //TODO Added from settlewns
+    // bytes roa::pub_key_bytes(const sysio::public_key &pubkey) {
+    // return std::visit([](auto&& key) -> std::vector<char> {
+    //     using T = std::decay_t<decltype(key)>;
+    //     if constexpr (std::is_same_v<T, sysio::ecc_public_key>) {
+    //         return std::vector<char>(key.begin(), key.end());
+    //     } else {
+    //         check(false, "Unsupported public key type.");
+    //         return {};
+    //     }
+    // }, pubkey);
+    // }
