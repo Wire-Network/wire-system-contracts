@@ -18,6 +18,17 @@ namespace sysio {
         public:
             using contract::contract;
 
+            typedef std::vector<char> bytes;
+
+            // enum depositState : uint8_t {
+            //     INTENT = 0,
+            //     PENDING = 1,
+            //     CONFIRMED = 2,
+            //     REJECTED  = 3
+            // };
+
+            // typedef enum depositState depositState_t;
+
             /** 
              * @brief Initializes sysio.roa, should be called as last step in Bios Boot Sequence, activating the ROA resource management system.
              * 
@@ -107,6 +118,46 @@ namespace sysio {
             [[sysio::action]]
             void reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint8_t& network_gen);
 
+
+            /**
+             * @brief Initiates the node registration process.
+             * 
+             * @param owner The account name of the node owner.
+             * @param tier Tier level of the node owner.
+             */
+            [[sysio::action]]
+            void initnodereg(const name& owner);
+
+            //TODO Update this
+            /**
+             * @brief After node owner deposit their token to NodeMan Contract on Ethereum, they provide us the informations that we need to verify the transaction. Sets status to pending.
+             * 
+             * @param owner The account name of the node owner.
+             * @param trxId The transaction ID of the transaction on Ethereum. 
+             * @param blockNum The Block number the transaction is included in.
+             * @param sig The signature
+             */
+            [[sysio::action]]
+            void setpending(const name& owner, const uint8_t& tier ,const bytes& trxId, const uint128_t& blockNum, const bytes& sig, const checksum256& msgDigest);
+
+            /**
+             * @brief Verifies the transaction and checks the information provided form node owner and transaction information are correct.
+             * 
+             * @param owner The account name of the node owner.
+             * @param trxId The transaction Id of the transaction on Ethereum.
+             */
+            // bool verifytrx(const name& owner, const bytes& trxId);
+            // TODO no need to add this action, don't forget to delete
+
+            /**
+             * @brief Finalizes registration process.
+             * 
+             * @param owner Account name of the node owner. 
+             * @param status Status of deposit state: 0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
+             */
+            [[sysio::action]]
+            void finalizereg(const name& owner,const uint8_t& status);
+
         private:
             
             /**
@@ -175,6 +226,72 @@ namespace sysio {
             };
 
             typedef sysio::multi_index<"reslimit"_n, reslimit> reslimit_t;
+
+            /**
+             * This table is scoped to Node Owner's acoount names and is used to track all the node registration actions.
+             * Status:  0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
+             */
+
+            struct [[sysio::table]] nodeownerreg {
+                name owner;                     // Node Owners account name 
+                uint8_t status;                 // Node Owners registration status 0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
+                bytes trx_id;                   // Transaction Id 
+                bytes trx_signature;            // Transaction Signature
+                uint8_t tier;                   // Tier
+                uint128_t block_num;            // Ethereum Block number the transaction is included in 
+
+                uint64_t primary_key() const { return owner.value; }
+                uint64_t by_tier() const { return static_cast<uint64_t>(tier); }
+            };
+
+            typedef multi_index<"nodeownerreg"_n, nodeownerreg> nodeownerreg_t;
+
+
+            struct [[sysio::table, sysio::contract("auth.msg")]] links_s {
+                uint64_t key;                                   // Auto incrementing primary key
+                name account_name;                              // sysio account name of the user
+                std::string pub_key;                            // Public key of the user
+                std::vector<unsigned char> eth_address;         // Ethereum address of the user, derived from public key
+                bytes comp_key;                                 // Compressed public key of the user
+                
+                uint64_t primary_key() const { return key; }
+                uint64_t by_name() const { return account_name.value; }
+
+                checksum256 by_eth_addr() const { 
+                    std::vector<char> packed_data;
+                    
+                    // Add the contract address bytes
+                    packed_data.insert(packed_data.end(), eth_address.begin(), eth_address.end());
+
+                    return sha256(packed_data.data(), packed_data.size());
+                }
+
+                checksum256 by_pub_key() const { 
+                    std::vector<char> packed_data;
+                    
+                    // Add the contract address bytes
+                    packed_data.insert(packed_data.end(), pub_key.begin(), pub_key.end());
+
+                    return sha256(packed_data.data(), packed_data.size());
+                }
+                checksum256 by_comp_key() const {
+                    std::vector<char> packed_data;
+                    
+                    // Add the contract address bytes
+                    packed_data.insert(packed_data.end(), comp_key.begin(), comp_key.end());
+
+                    return sha256(packed_data.data(), packed_data.size());
+                }
+            };
+
+            typedef sysio::multi_index<"links"_n, links_s,
+                indexed_by<"byname"_n, const_mem_fun<links_s, uint64_t, &links_s::by_name>>,
+                indexed_by<"byethaddr"_n, const_mem_fun<links_s, checksum256, &links_s::by_eth_addr>>,
+                indexed_by<"bypubkey"_n, const_mem_fun<links_s, checksum256, &links_s::by_pub_key>>,
+                indexed_by<"bycompkey"_n, const_mem_fun<links_s, checksum256, &links_s::by_comp_key>>
+            > links_t;
+
+
 
             // ---- Private Functions ----
 
