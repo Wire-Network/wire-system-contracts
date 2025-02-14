@@ -282,8 +282,8 @@ namespace sysio {
     };
 
     void roa::initnodereg(const name& owner) {
-        //TODO -> Add require auth 
-        // require_auth(permission_level{owner, "auth.ext"_n});
+        
+        require_auth(permission_level{owner, "auth.ext"_n});
 
         roastate_t roastate(get_self(), get_self().value);
         auto state = roastate.get();
@@ -295,9 +295,6 @@ namespace sysio {
 
         nodeownerreg_t nodereg(get_self(), state.network_gen);
         auto nodereg_itr = nodereg.find(owner.value);
-
-        //TODO -> 
-        // check(nodereg_itr == nodereg.end(),"Registration already initialized");
         
         if (nodereg_itr != nodereg.end()) {
             check(nodereg_itr->status == 3, "A registration is already pending or confirmed.");
@@ -322,12 +319,9 @@ namespace sysio {
         }
     };
 
-
-    // TODO -> IF needed  const bytes& sig, const checksum256& msgDigest 
     void roa::setpending(const name& owner, const uint8_t& tier ,const checksum256& trxId, const uint128_t& blockNum, const bytes& sig) {
         
-        //TODO -> Add require auth
-        // require_auth(permission_level{owner, "auth.ext"_n});
+        require_auth(permission_level{owner, "auth.ext"_n});
     
         roastate_t roastate(get_self(), get_self().value);
         auto state = roastate.get();
@@ -338,46 +332,31 @@ namespace sysio {
         
         check(nodereg_itr != nodereg.end(),"Registration not initialized yet");
 
-        // TODO -> If Tier 4 or 5s need to be able to register, adjust our conditional
         check(tier > 0 && tier <= 3 , "Tier level must be between 1 and 3");
 
         check(nodereg_itr->status == 0, "Registration status must be 0 ( INTENT ) to set PENDING.");
 
 
-        //TODO -> check if the trx id used before or not.
         auto bytrxid_index = nodereg.get_index<"bytrxid"_n>();
         auto foundtrxId = bytrxid_index.find(trxId);
         check(foundtrxId == bytrxid_index.end(),"This trx Id is already used");
-        
 
-        // TODO ->
-        // check(sig.size() >= 32, "Invalid signature, must be longer than 32 bytes.");
-
-
-        // TODO -> 
         nodereg.modify(nodereg_itr,get_self(),[&](auto &row){
             row.status = 1; 
             row.trx_id = trxId;
             row.trx_signature = sig;
             row.tier = tier; 
             row.block_num = blockNum;
-        // ! NOTE: might need to add require_receipient(account_name) call to notify validators of a new pending transaction
         });
-        //TODO -> Add notifier for validator
+        // TODO: might need to add require_receipient(account_name) call to notify validators of a new pending transaction
         // require_recipient("Validator");
-
     };
 
-
-    // TODO -> Make sure validator is checking nodeownerreg table, when status changed to PENDING, validator needs to check the information they provided is matching with the trx they did on Ethereum
-    // TODO -> VALIDATOR is going to push this action if the trx is approved or rejected
-    // Status:  0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
     void roa::finalizereg(const name& owner,const uint8_t& status) {
 
         // TODO -> Require authorization for validator !!!
-        // require_auth(permission_level{owner, "auth.ext"_n});
+        // require_auth();
         
-
         roastate_t roastate(get_self(), get_self().value);
         auto state = roastate.get();
         check(state.is_active, "ROA is not active yet");
@@ -390,6 +369,7 @@ namespace sysio {
 
         check(nodereg_itr->status == 1, "Registration is not in 1 ( PENDING ) state.");
 
+        check(status == 3 || status == 4, "Invalid status: Can only confirm (2) or reject (3)");
 
         if(status == 2){
             
@@ -407,20 +387,14 @@ namespace sysio {
                 row.status = 3;
             });
         }
-
-    
     };
-
-
 
     // ---- Private Helper Function ----
 
     void roa::regnodeowner(const name& owner, const uint8_t& tier) {
-        //TODO -> Add validators
-        // require_auth(get_self());
 
         roastate_t roastate(get_self(), get_self().value);
-        auto state = roastate.get();
+        auto state = roastate.get(); 
         check(state.is_active, "ROA is not active yet");
 
         nodeowners_t nodeowners(get_self(), state.network_gen);
@@ -567,7 +541,3 @@ namespace sysio {
 };
 
 // namespace roa
-
-// SYSIO_DISPATCH(sysio::roa, (reducepolicy));
-
-

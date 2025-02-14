@@ -23,8 +23,8 @@ namespace sysio {
             /** 
              * @brief Initializes sysio.roa, should be called as last step in Bios Boot Sequence, activating the ROA resource management system.
              * 
-             * @param total_sys The total starting SYS of the network.
-             * @param ram_byte_price The amount of bytes .0001 SYS is worth, set in roastate table. If SYS precision is different, same concept applies, the single smallest unit of the core token.
+             * @param totalSys The total starting SYS of the network.
+             * @param bytesPerUnit The amount of bytes .0001 SYS is worth, set in roastate table. If SYS precision is different, same concept applies, the single smallest unit of the core token.
              */
             [[sysio::action]]
             void activateroa(const asset& totalSys, const uint64_t& bytesPerUnit);
@@ -34,7 +34,7 @@ namespace sysio {
              * 
              * @brief Updates the amount of bytes .0001 SYS allocates. Requires Node Owner multisig approval, should only be used on network expansion.
              * 
-             * @param bytes_per_unit The NEW amount of bytes .0001 SYS is worth.
+             * @param bytesPerUnit The NEW amount of bytes .0001 SYS is worth.
              */
             [[sysio::action]]
             void setbyteprice(const uint64_t& bytesPerUnit);
@@ -48,11 +48,11 @@ namespace sysio {
              * 
              * @param owner The account to issue this policy for.
              * @param issuer The Node Owner issuing the policy.
-             * @param net_weight The amount of SYS allocated for NET
-             * @param cpu_weight The amount of SYS allocated for CPU
-             * @param ram_weight The amount of SYS allocated for RAM.
-             * @param time_block A block number, the policy can't be reclaimed or reduced before this block.
-             * @param network_gen Generation of issuer, in cases were you are a Node Owner in multiple, specifies which allocation of SYS to pull from.
+             * @param netWeight The amount of SYS allocated for NET
+             * @param cpuWeight The amount of SYS allocated for CPU
+             * @param ramWeight The amount of SYS allocated for RAM.
+             * @param timeBlock A block number, the policy can't be reclaimed or reduced before this block.
+             * @param networkGen Generation of issuer, in cases were you are a Node Owner in multiple, specifies which allocation of SYS to pull from.
              */
             [[sysio::action]]
             void addpolicy(const name& owner, const name& issuer, const asset& netWeight, const asset& cpuWeight, const asset& ramWeight, const uint32_t& timeBlock, const uint8_t& networkGen);
@@ -64,10 +64,10 @@ namespace sysio {
              * 
              * @param owner The account this policy is issued to.
              * @param issuer The Node Owner who issued this policy.
-             * @param net_weight The amount in SYS to increase NET by.
-             * @param cpu_weight The amount in SYS to increase CPU by.
-             * @param ram_weight The amount in SYS to increase RAM by.
-             * @param network_gen Generation of issuer, in cases were you are a Node Owner in multiple, specifies which allocation of SYS to pull from.
+             * @param netWeight The amount in SYS to increase NET by.
+             * @param cpuWeight The amount in SYS to increase CPU by.
+             * @param ramWeight The amount in SYS to increase RAM by.
+             * @param networkGen Generation of issuer, in cases were you are a Node Owner in multiple, specifies which allocation of SYS to pull from.
              */
             [[sysio::action]]
             void expandpolicy(const name& owner, const name& issuer, const asset& netWeight, const asset& cpuWeight, const asset& ramWeight, const uint8_t& networkGen);
@@ -77,7 +77,7 @@ namespace sysio {
              * 
              * @param owner The account this policy is issued to.
              * @param issuer The Node Owner who issued this policy.
-             * @param new_time_block The new block number this policy can't be reduced or reclaimed till.
+             * @param newTimeBlock The new block number this policy can't be reduced or reclaimed till.
              */
             [[sysio::action]]
             void extendpolicy(const name& owner, const name& issuer, const uint32_t& newTimeBlock);
@@ -107,15 +107,15 @@ namespace sysio {
             [[sysio::action]]
             void initnodereg(const name& owner);
 
-            //TODO Update this
+
             /**
-             * @brief After node owner deposit their token to NodeMan Contract on Ethereum, they provide us the informations that we need to verify the transaction. Sets status to pending.
+             * @brief After the Node Owner deposits their Wire-Node NFT to the NodeMan contract on Ethereum this action is called to update their intent with the transaction ID and Signature of the Eth Deposit setting the status of their registration to pending (1)
              * 
              * @param owner The account name of the node owner.
              * @param tier The tier level of the node owner.
              * @param trxId The transaction ID of the transaction on Ethereum. 
-             * @param blockNum The Block number the transaction is included in.
-             * @param sig The signature
+             * @param blockNum The block number on ETH that the deposit was in.
+             * @param sig The signature of the Ethereum deposit
              */
             [[sysio::action]]
             void setpending(const name& owner, const uint8_t& tier ,const checksum256& trxId, const uint128_t& blockNum, const bytes& sig);
@@ -124,7 +124,7 @@ namespace sysio {
              * @brief Finalizes registration process.
              * 
              * @param owner Account name of the node owner. 
-             * @param status Status of deposit state: 0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
+             * @param status Status of deposit state: 2-> CONFIRMED / 3-> REJECTED
              */
             [[sysio::action]]
             void finalizereg(const name& owner,const uint8_t& status);
@@ -188,10 +188,10 @@ namespace sysio {
              * Scoped to Owner: Holds upper limits of resources an account has access to. This table is used by the Node Operators to maintain usage metrics, replaces 'userres' on sysio.
              */
             struct [[sysio::table]] reslimit {
-                name owner;            // Account name this policy applies to
-                asset net_weight;      // Total NET allocated
-                asset cpu_weight;      // Total CPU allocated
-                uint64_t ram_bytes;    // Total RAM allocated
+                name owner;             // Account name this policy applies to
+                asset net_weight;       // Total NET allocated
+                asset cpu_weight;       // Total CPU allocated
+                uint64_t ram_bytes;     // Total RAM allocated
 
                 uint64_t primary_key() const { return owner.value; }
             };
@@ -200,16 +200,14 @@ namespace sysio {
 
             /**
              * This table is scoped to Node Owner's acoount names and is used to track all the node registration actions.
-             * Status:  0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
              */
-
             struct [[sysio::table]] nodeownerreg {
                 name owner;                     // Node Owners account name 
                 uint8_t status;                 // Node Owners registration status 0-> INTENT / 1-> PENDING  / 2-> CONFIRMED / 3-> REJECTED
-                checksum256 trx_id;             // Transaction Id 
-                bytes trx_signature;            // Transaction Signature
-                uint8_t tier;                   // Tier
-                uint128_t block_num;            // Ethereum Block number the transaction is included in 
+                checksum256 trx_id;             // Transaction Id of Ethereum deposit
+                bytes trx_signature;            // Transaction Signature of Ethereum deposit
+                uint8_t tier;                   // Tier of Node Owner
+                uint128_t block_num;            // Ethereum Block number the deposit transaction is included in 
 
                 uint64_t primary_key() const { return owner.value; }
                 uint64_t by_tier() const { return static_cast<uint64_t>(tier); }
@@ -224,58 +222,9 @@ namespace sysio {
             >nodeownerreg_t;
 
 
-            struct [[sysio::table, sysio::contract("auth.msg")]] links_s {
-                uint64_t key;                                   // Auto incrementing primary key
-                name account_name;                              // sysio account name of the user
-                std::string pub_key;                            // Public key of the user
-                std::vector<unsigned char> eth_address;         // Ethereum address of the user, derived from public key
-                bytes comp_key;                                 // Compressed public key of the user
-                
-                uint64_t primary_key() const { return key; }
-                uint64_t by_name() const { return account_name.value; }
-
-                checksum256 by_eth_addr() const { 
-                    std::vector<char> packed_data;
-                    
-                    // Add the contract address bytes
-                    packed_data.insert(packed_data.end(), eth_address.begin(), eth_address.end());
-
-                    return sha256(packed_data.data(), packed_data.size());
-                }
-
-                checksum256 by_pub_key() const { 
-                    std::vector<char> packed_data;
-                    
-                    // Add the contract address bytes
-                    packed_data.insert(packed_data.end(), pub_key.begin(), pub_key.end());
-
-                    return sha256(packed_data.data(), packed_data.size());
-                }
-                checksum256 by_comp_key() const {
-                    std::vector<char> packed_data;
-                    
-                    // Add the contract address bytes
-                    packed_data.insert(packed_data.end(), comp_key.begin(), comp_key.end());
-
-                    return sha256(packed_data.data(), packed_data.size());
-                }
-            };
-
-            typedef sysio::multi_index<"links"_n, links_s,
-                indexed_by<"byname"_n, const_mem_fun<links_s, uint64_t, &links_s::by_name>>,
-                indexed_by<"byethaddr"_n, const_mem_fun<links_s, checksum256, &links_s::by_eth_addr>>,
-                indexed_by<"bypubkey"_n, const_mem_fun<links_s, checksum256, &links_s::by_pub_key>>,
-                indexed_by<"bycompkey"_n, const_mem_fun<links_s, checksum256, &links_s::by_comp_key>>
-            > links_t;
-
-
-
             // ---- Private Functions ----
 
             /**
-             * TODO: Convert to multi step process. Restrict auth to Node Operator accounts.
-             * TODO: Notify council contract on registration, think about order of operations on council contract existing.
-             * 
              * @brief Registers 'owner' as a Node Owner scoped by network_gen, granting SYS allotment based on Tier and creates a default policy for owner.
              * 
              * NOTE: Can only register for the current generation of the network.
