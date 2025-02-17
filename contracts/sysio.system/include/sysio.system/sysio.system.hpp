@@ -282,6 +282,29 @@ namespace sysiosystem {
       SYSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
    };
 
+
+   // Defines 'domain_info' structure to be stored in 'domains' table (jovi-update)
+   struct [[sysio::table, sysio::contract("sysio.system")]] domain_info {
+      uint64_t key;            // Unique primary key for the table
+      name     account_name;   // Name of the account (domain)
+      name     creator;        // Creator of the domain
+      time_point created_at;   // Timestamp of domain creation
+
+      // Primary key
+      uint64_t primary_key() const { return key; }
+
+      // Secondary index to retrieve by creator
+      uint64_t by_creator() const { return creator.value; }
+
+      // Serialization macro
+      SYSLIB_SERIALIZE(domain_info, (key)(account_name)(creator)(created_at))
+};
+
+// Define the multi-index table
+typedef sysio::multi_index<"domains"_n, domain_info,
+   indexed_by<"bycreator"_n, const_mem_fun<domain_info, uint64_t, &domain_info::by_creator>>
+> domains_t;
+
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
    // - `proxy` the proxy set by the voter, if any
