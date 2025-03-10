@@ -1,0 +1,124 @@
+<h1 class="contract">activateroa</h1>
+
+---
+spec_version: "0.2.0"
+title: Activate ROA Contract
+summary: 'Activates ROA setting {{nowrap max_ram_bytes}} and ram price {{nowrap ram_byte_price}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} activates the ROA contract and sets sysio.roa's {{max_ram_bytes}} to the networks capacity of RAM. It also sets the price of 1 byte of RAM {{ram_byte_price}}. Finally it adds system accounts to the reslimit table.
+
+<h1 class="contract">setbyteprice</h1>
+
+---
+spec_version: "0.2.0"
+title: Updates the price of RAM
+summary: 'Sets our bytes_per_unit to {{nowrap bytes_per_unit}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Updates the price of ram to {{bytes_per_unit}}
+
+
+<h1 class="contract">addpolicy</h1>
+
+---
+spec_version: "0.2.0"
+title: Creates A New Policy 
+summary: 'Creates a new policy under {{nowrap issuer}} granting resources to {{nowrap owner}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Creates a new policy scoped to {{issuer}} allocating {{net_weight}}, {{cpu_weight}}, and {{ram_weight}} worth of their unallocated SYS to {{owner}}. This increases {{owner}}'s resource allotment tracked in the reslimit table. This policy can't be reclaimed or reduced until the current block number reaches {{time_block}}
+
+<h1 class="contract">expandpolicy</h1>
+
+---
+spec_version: "0.2.0"
+title: Increases An Existing Policies Weights 
+summary: 'Increases {{nowrap issuer}} weights of allocated SYS for {{nowrap owner}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Finds the existing Policy {{issuer}} set for {{owner}}. Adds {{net_weight}}, {{cpu_weight}}, and {{ram_weight}} to the previous weights of the policy. Then it increments {{owner}}'s reslimit values as well as {{issuer}}'s allocated_sys in the Node Owners table.
+
+<h1 class="contract">extendpolicy</h1>
+
+---
+spec_version: "0.2.0"
+title: Extends a policies time_block period 
+summary: 'Extends {{nowrap issuer}}'s policy for {{nowrap owner}} by setting time_block to {{nowrap new_time_block}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Finds the existing Policy {{issuer}} set for {{owner}} and increases the existing time_block on the policy to {{new_time_block}}
+
+<h1 class="contract">reducepolicy</h1>
+
+---
+spec_version: "0.2.0"
+title: Decreases An Existing Policies Weights 
+summary: 'Decreases {{nowrap issuer}} weights of allocated SYS for {{nowrap owner}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Finds the existing Policy {{issuer}} set for {{owner}}, ensures the current block number is >= to the policie's time_block. You can not reduce a policy otherwise. Then it reduces the policies weights by {{net_weight}} {{cpu_weight}} {{ram_weight}} respectively, it will check that {{ram_weight}} doesn't lower it beyond what is already used vs allocated.
+
+<h1 class="contract">initnodereg</h1>
+
+---
+spec_version: "0.2.0"
+title: Initialize Node Registration
+summary: 'Initializes a registration for {{nowrap owner}} as a node owner'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Initializes the node owner registration process for {{owner}}. This sets up a pending registration in the `nodereg` table and prepares the system for validation.
+
+<h1 class="contract">setpending</h1>
+
+---
+spec_version: "0.2.0"
+title: Set Registration Pending
+summary: 'Sets the registration status for {{nowrap owner}} to PENDING with transaction ID {{nowrap trxId}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} updates the registration for {{owner}} to a PENDING status. The transaction ID {{trxId}}, block number {{blockNum}}, and signature {{sig}} are recorded in the `nodereg` table. This action ensures validators can verify the transaction on the Ethereum side.
+
+<h1 class="contract">finalizereg</h1>
+
+---
+spec_version: "0.2.0"
+title: Finalize Node Registration
+summary: 'Finalizes the registration for {{nowrap owner}} with status {{nowrap status}}'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} finalizes the registration process for {{owner}}. Updates the registration status in the `nodereg` table to either CONFIRMED (2) or REJECTED (3) based on the provided status.
+
+<h1 class="contract">reclaimmax</h1>
+
+---
+spec_version: "0.2.0"
+title: Reclaims Max Policy Allocation 
+summary: 'Reclaims {{nowrap issuer}} maximum weights of CPU / NET and all UNUSED RAM'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Finds the existing Policy {{issuer}} set for {{owner}}, ensures the current block number is >= to the policie's time_block. You can not reduce a policy otherwise. It will reclaim all CPU / NET weights, and then attempt to reclaim as much of the allocated RAM as it can limited by how much of it is unused.
+
+
+
+
+<h1 class="contract">regnodeowner</h1>
+
+---
+spec_version: "0.2.0"
+title: Registers Node Owners
+summary: 'Registers {{nowrap owner}} as a {{nowrap tier}} Node Owner'
+icon: @ICON_BASE_URL@/@ADMIN_ICON_URI@
+---
+
+{{$action.account}} Reigsters {{owner}} as a {{tier}} Node Owner and creates a default policy for them.

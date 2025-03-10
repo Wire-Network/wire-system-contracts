@@ -297,6 +297,11 @@ namespace sysiosystem {
       set_resource_limits( account, ram, current_net, current_cpu );
    }
 
+   void system_contract::setprods( const std::vector<sysio::producer_authority>& schedule ) {
+      require_auth( get_self() );
+      set_proposed_producers( schedule );
+   }
+
    void system_contract::setacctnet( const name& account, const std::optional<int64_t>& net_weight ) {
       require_auth( get_self() );
 
@@ -460,13 +465,13 @@ namespace sysiosystem {
          }
       }
 
-      user_resources_table  userres( get_self(), new_account_name.value );
+      // user_resources_table  userres( get_self(), new_account_name.value );
 
-      userres.emplace( new_account_name, [&]( auto& res ) {
-        res.owner = new_account_name;
-        res.net_weight = asset( 0, system_contract::get_core_symbol() );
-        res.cpu_weight = asset( 0, system_contract::get_core_symbol() );
-      });
+      // userres.emplace( new_account_name, [&]( auto& res ) {
+      //   res.owner = new_account_name;
+      //   res.net_weight = asset( 0, system_contract::get_core_symbol() );
+      //   res.cpu_weight = asset( 0, system_contract::get_core_symbol() );
+      // });
 
       set_resource_limits( new_account_name, 0, 0, 0 );
    }
