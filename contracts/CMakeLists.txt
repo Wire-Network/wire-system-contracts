@@ -51,5 +51,6 @@ add_subdirectory(sysio.msig)
 add_subdirectory(sysio.system)
 add_subdirectory(sysio.token)
 add_subdirectory(sysio.wrap)
+add_subdirectory(sysio.roa)
 
 add_subdirectory(test_contracts)
