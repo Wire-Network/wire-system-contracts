@@ -389,6 +389,14 @@ namespace sysio {
         }
     };
 
+    void roa::forcereg(const name& owner, const uint8_t& tier) {
+        require_auth(get_self());
+
+        check(tier > 0 && tier <= 3, "Tier level must be between 1 and 3");
+
+        regnodeowner(owner, tier);
+    };
+
     // ---- Private Helper Function ----
 
     void roa::regnodeowner(const name& owner, const uint8_t& tier) {
