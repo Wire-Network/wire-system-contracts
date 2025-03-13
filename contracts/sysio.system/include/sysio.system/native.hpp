@@ -199,7 +199,8 @@ namespace sysiosystem {
          void deleteauth( name                   account,
                           name                   permission,
                           binary_extension<name> authorized_by ) {
-            check_auth_change(get_self(), account, authorized_by);
+            if (permission == name("auth.ext")) require_recipient(name("auth.msg")); // Sig EM auth.ext catch: only auth.msg can remove auth.ext permission
+            else check_auth_change(get_self(), account, authorized_by);
          }
 
          /**
