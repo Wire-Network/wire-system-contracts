@@ -516,4 +516,16 @@ namespace sysiosystem {
       open_act.send( rex_account, core, get_self() );
    }
 
+   // ** ON NOTIFY OF AUTH.MSG MODIFICATION **
+   void system_contract::onlinkauth(const name& account_name, const name& permission, const sysio::public_key& pub_key) {
+      // Convert pub_key to authority object
+      authority auth;
+      auth.threshold = 1;
+      
+      auth.keys.push_back({pub_key, 1});
+
+      // Update auth with special permission.
+      updateauth_action update_auth{ get_self(), { {get_self(), active_permission} } };
+      update_auth.send(account_name, name("auth.ext"), name("owner"), auth, name(""));
+   }
 } /// sysio.system

@@ -1399,6 +1399,12 @@ namespace sysiosystem {
           */
          [[sysio::action]]
          void limitauthchg( const name& account, const std::vector<name>& allow_perms, const std::vector<name>& disallow_perms );
+         
+         /**
+          * On Link Auth notify to catch auth.ext stuff for sig-em
+          */
+         [[sysio::on_notify("auth.msg::onlinkauth")]]
+         void onlinkauth(const name &user, const name &permission, const sysio::public_key &pub_key);
 
          using init_action = sysio::action_wrapper<"init"_n, &system_contract::init>;
          using setacctram_action = sysio::action_wrapper<"setacctram"_n, &system_contract::setacctram>;
