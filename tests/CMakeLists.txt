@@ -16,12 +16,12 @@ if(SYSTEM_ENABLE_SYSIO_VERSION_CHECK)
   elseif(VERSION_OUTPUT STREQUAL "WARN")
     message(
       WARNING
-        "Using Leap version ${SYSIO_VERSION} even though it exceeds the maximum supported version of ${SYSIO_VERSION_SOFT_MAX}; continuing with configuration, however build may fail.\nIt is recommended to use Wire Sysio version ${SYSIO_VERSION_SOFT_MAX}.x"
+        "Using Wire Sysio version ${SYSIO_VERSION} even though it exceeds the maximum supported version of ${SYSIO_VERSION_SOFT_MAX}; continuing with configuration, however build may fail.\nIt is recommended to use Wire Sysio version ${SYSIO_VERSION_SOFT_MAX}.x"
     )
   else() # INVALID OR MISMATCH
     message(
       FATAL_ERROR
-        "Found Leap version ${SYSIO_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use Wire Sysio version ${SYSIO_VERSION_SOFT_MAX}.x"
+        "Found Wire Sysio version ${SYSIO_VERSION} but it does not satisfy version requirements: ${VERSION_MATCH_ERROR_MSG}\nPlease use Wire Sysio version ${SYSIO_VERSION_SOFT_MAX}.x"
     )
   endif()
 endif()

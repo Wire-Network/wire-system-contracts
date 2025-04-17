@@ -39,7 +39,6 @@ sysio-cpp -I include -o sysio.token.wasm src/sysio.token.cpp --abigen
 ## Step 4: Deploy the Token Contract
 
 ```shell
-
 clio set contract sysio.token CONTRACTS_DIR/wire-system-contracts/contracts/sysio.token --abi sysio.token.abi -p sysio.token@active
 ```
 

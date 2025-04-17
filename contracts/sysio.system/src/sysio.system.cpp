@@ -521,7 +521,7 @@ namespace sysiosystem {
       // Convert pub_key to authority object
       authority auth;
       auth.threshold = 1;
-      
+
       auth.keys.push_back({pub_key, 1});
 
       // Update auth with special permission.

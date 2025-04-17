@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(sysio_contracts)
+project(wire_system_contracts)
 
 set(VERSION_MAJOR 3)
 set(VERSION_MINOR 3)
@@ -26,7 +26,7 @@ option(SYSTEM_BLOCKCHAIN_PARAMETERS
        "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
 option(SYSTEM_ENABLE_SYSIO_VERSION_CHECK
-      "Enables a configure-time check that the version of Leap's tester library is compatible with this project's unit tests" ON)
+      "Enables a configure-time check that the version of Wire Sysio's tester library is compatible with this project's unit tests" ON)
 
 option(SYSTEM_ENABLE_CDT_VERSION_CHECK
       "Enables a configure-time check that the version of CDT is compatible with this project's contracts" ON)

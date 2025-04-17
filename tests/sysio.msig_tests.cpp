@@ -180,7 +180,7 @@ transaction sysio_msig_tester::reqauth( account_name from, const vector<permissi
 }
 
 void sysio_msig_tester::check_traces(transaction_trace_ptr trace, std::vector<std::map<std::string, name>> res) {
-   
+
    BOOST_REQUIRE( bool(trace) );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
    BOOST_REQUIRE_EQUAL( res.size(), trace->action_traces.size() );
@@ -519,7 +519,7 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_all_approve, sysio_msig_tester )
                         {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
                         {{"receiver", config::system_account_name}, {"act_name", "setcode"_n}}
                         } );
-   
+
    // can't create account because system contract was replaced by the reject_all contract
    BOOST_REQUIRE_EXCEPTION( create_account_with_resources( "alice1111112"_n, "sysio"_n, core_sym::from_string("1.0000"), false ),
                             sysio_assert_message_exception, sysio_assert_message_is("rejecting all actions")
@@ -649,7 +649,7 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_major_approve, sysio_msig_tester
                         {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
                         {{"receiver", config::system_account_name}, {"act_name", "setcode"_n}}
                         } );
-   
+
    // can't create account because system contract was replaced by the reject_all contract
    BOOST_REQUIRE_EXCEPTION( create_account_with_resources( "alice1111112"_n, "sysio"_n, core_sym::from_string("1.0000"), false ),
                             sysio_assert_message_exception, sysio_assert_message_is("rejecting all actions")
@@ -907,7 +907,7 @@ BOOST_FIXTURE_TEST_CASE( approve_with_hash, sysio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
                   ("proposal_hash", trx_hash)
    );
-   
+
    transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
                                             ("proposer",      "alice")
                                             ("proposal_name", "first")
@@ -1046,7 +1046,7 @@ BOOST_FIXTURE_TEST_CASE( sendinline, sysio_msig_tester ) try {
                         {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
                         {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
                         } );
-   
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
