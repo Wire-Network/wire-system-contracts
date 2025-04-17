@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(sysio_contracts)
+project(wire_system_contracts)
 
 set(VERSION_MAJOR 3)
 set(VERSION_MINOR 1)
@@ -13,7 +13,7 @@ else()
   set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 endif()
 
-message(STATUS "Building eos-system-contracts v${VERSION_FULL}")
+message(STATUS "Building wire-system-contracts v${VERSION_FULL}")
 
 include(ExternalProject)
 
@@ -25,8 +25,8 @@ option(SYSTEM_CONFIGURABLE_WASM_LIMITS
 option(SYSTEM_BLOCKCHAIN_PARAMETERS
        "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
-option(SYSTEM_ENABLE_LEAP_VERSION_CHECK
-      "Enables a configure-time check that the version of Leap's tester library is compatible with this project's unit tests" ON)
+option(SYSTEM_ENABLE_WIRE_SYSIO_VERSION_CHECK
+      "Enables a configure-time check that the version of Wire Sysio's tester library is compatible with this project's unit tests" ON)
 
 option(SYSTEM_ENABLE_CDT_VERSION_CHECK
       "Enables a configure-time check that the version of CDT is compatible with this project's contracts" ON)

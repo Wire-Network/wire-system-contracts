@@ -30,7 +30,7 @@ namespace sysiosystem {
       uint16_t          weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
+      SYSLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
    };
 
    /**
@@ -43,7 +43,7 @@ namespace sysiosystem {
       uint16_t           weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( key_weight, (key)(weight) )
+      SYSLIB_SERIALIZE( key_weight, (key)(weight) )
    };
 
    /**
@@ -56,7 +56,7 @@ namespace sysiosystem {
       uint16_t           weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
+      SYSLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
    };
 
    /**
@@ -75,7 +75,7 @@ namespace sysiosystem {
       std::vector<wait_weight>              waits;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
+      SYSLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
    };
 
    /**
@@ -102,7 +102,7 @@ namespace sysiosystem {
       std::optional<sysio::producer_schedule>   new_producers;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
+      SYSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
                                      (schedule_version)(new_producers))
    };
 
@@ -116,7 +116,7 @@ namespace sysiosystem {
       checksum256       hash;
       uint64_t primary_key()const { return owner.value; }
 
-      EOSLIB_SERIALIZE( abi_hash, (owner)(hash) )
+      SYSLIB_SERIALIZE( abi_hash, (owner)(hash) )
    };
 
    void check_auth_change(name contract, name account, const binary_extension<name>& authorized_by);
