@@ -14,11 +14,11 @@ namespace sysio {
    using std::string;
 
    /**
-    * The `sysio.token` sample system contract defines the structures and actions that allow users to create, issue, and manage tokens for EOSIO based blockchains. It demonstrates one way to implement a smart contract which allows for creation and management of tokens. It is possible for one to create a similar contract which suits different needs. However, it is recommended that if one only needs a token with the below listed actions, that one uses the `sysio.token` contract instead of developing their own.
+    * The `sysio.token` sample system contract defines the structures and actions that allow users to create, issue, and manage tokens for SYSIO based blockchains. It demonstrates one way to implement a smart contract which allows for creation and management of tokens. It is possible for one to create a similar contract which suits different needs. However, it is recommended that if one only needs a token with the below listed actions, that one uses the `sysio.token` contract instead of developing their own.
     * 
     * The `sysio.token` contract class also implements two useful public static methods: `get_supply` and `get_balance`. The first allows one to check the total supply of a specified token, created by an account and the second allows one to check the balance of a token for a specified account (the token creator account has to be specified as well).
     * 
-    * The `sysio.token` contract manages the set of tokens, accounts and their corresponding balances, by using two internal multi-index structures: the `accounts` and `stats`. The `accounts` multi-index table holds, for each row, instances of `account` object and the `account` object holds information about the balance of one token. The `accounts` table is scoped to an EOSIO account, and it keeps the rows indexed based on the token's symbol.  This means that when one queries the `accounts` multi-index table for an account name the result is all the tokens that account holds at the moment.
+    * The `sysio.token` contract manages the set of tokens, accounts and their corresponding balances, by using two internal multi-index structures: the `accounts` and `stats`. The `accounts` multi-index table holds, for each row, instances of `account` object and the `account` object holds information about the balance of one token. The `accounts` table is scoped to an SYSIO account, and it keeps the rows indexed based on the token's symbol.  This means that when one queries the `accounts` multi-index table for an account name the result is all the tokens that account holds at the moment.
     * 
     * Similarly, the `stats` multi-index table, holds instances of `currency_stats` objects for each row, which contains information about current supply, maximum supply, and the creator account for a symbol token. The `stats` table is scoped to the token symbol.  Therefore, when one queries the `stats` table for a token symbol the result is one single entry/row corresponding to the queried symbol token if it was previously created, or nothing, otherwise.
     */
@@ -82,8 +82,8 @@ namespace sysio {
           * @param symbol - the token to be payed with by `ram_payer`,
           * @param ram_payer - the account that supports the cost of this action.
           *
-          * More information can be read [here](https://github.com/EOSIO/sysio.contracts/issues/62)
-          * and [here](https://github.com/EOSIO/sysio.contracts/issues/61).
+          * More information can be read [here](https://github.com/SYSIO/sysio.contracts/issues/62)
+          * and [here](https://github.com/SYSIO/sysio.contracts/issues/61).
           */
          [[sysio::action]]
          void open( const name& owner, const symbol& symbol, const name& ram_payer );

@@ -198,11 +198,18 @@ BOOST_FIXTURE_TEST_CASE( stake_unstake, sysio_system_tester ) try {
 
    produce_block( fc::hours(3*24-1) );
    produce_blocks(1);
+   // testing balance still the same
    BOOST_REQUIRE_EQUAL( core_sym::from_string("700.0000"), get_balance( "alice1111111" ) );
    BOOST_REQUIRE_EQUAL( init_sysio_stake_balance + core_sym::from_string("300.0000"), get_balance( "sysio.stake"_n ) );
-   //after 3 days funds should be released
+   // call refund expected to fail too early
+   BOOST_REQUIRE_EQUAL( wasm_assert_msg("refund is not available yet"),
+                       push_action( "alice1111111"_n, "refund"_n, mvo()("owner", "alice1111111") ) );
+
+   // after 1 hour refund ready
    produce_block( fc::hours(1) );
    produce_blocks(1);
+   // now we can do the refund
+   BOOST_REQUIRE_EQUAL( success(), push_action( "alice1111111"_n, "refund"_n, mvo()("owner", "alice1111111") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("1000.0000"), get_balance( "alice1111111" ) );
    BOOST_REQUIRE_EQUAL( init_sysio_stake_balance, get_balance( "sysio.stake"_n ) );
 
@@ -235,6 +242,7 @@ BOOST_FIXTURE_TEST_CASE( stake_unstake, sysio_system_tester ) try {
 
    REQUIRE_MATCHING_OBJECT( voter( "alice1111111", core_sym::from_string("0.0000") ), get_voter_info( "alice1111111" ) );
    produce_blocks(1);
+   BOOST_REQUIRE_EQUAL( success(), push_action( "alice1111111"_n, "refund"_n, mvo()("owner", "alice1111111") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("1000.0000"), get_balance( "alice1111111" ) );
 } FC_LOG_AND_RETHROW()
 
@@ -278,6 +286,7 @@ BOOST_FIXTURE_TEST_CASE( stake_unstake_with_transfer, sysio_system_tester ) try 
    produce_block( fc::hours(1) );
    produce_blocks(1);
 
+   BOOST_REQUIRE_EQUAL( success(), push_action( "alice1111111"_n, "refund"_n, mvo()("owner", "alice1111111") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("1300.0000"), get_balance( "alice1111111" ) );
 
    //stake should be equal to what was staked in constructor, voting power should be 0
@@ -342,6 +351,7 @@ BOOST_FIXTURE_TEST_CASE( stake_while_pending_refund, sysio_system_tester ) try {
    produce_block( fc::hours(1) );
    produce_blocks(1);
 
+   BOOST_REQUIRE_EQUAL( success(), push_action( "alice1111111"_n, "refund"_n, mvo()("owner", "alice1111111") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("1300.0000"), get_balance( "alice1111111" ) );
 
    //stake should be equal to what was staked in constructor, voting power should be 0
@@ -604,6 +614,7 @@ BOOST_FIXTURE_TEST_CASE( adding_stake_partial_unstake, sysio_system_tester ) try
    BOOST_REQUIRE_EQUAL( core_sym::from_string("550.0000"), get_balance( "alice1111111" ) );
    produce_block( fc::days(1) );
    produce_blocks(1);
+   BOOST_REQUIRE_EQUAL( success(), push_action( "alice1111111"_n, "refund"_n, mvo()("owner", "alice1111111") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("850.0000"), get_balance( "alice1111111" ) );
 
 } FC_LOG_AND_RETHROW()
@@ -737,7 +748,7 @@ BOOST_FIXTURE_TEST_CASE( producer_register_unregister, sysio_system_tester ) try
    issue_and_transfer( "alice1111111", core_sym::from_string("1000.0000"),  config::system_account_name );
 
    //fc::variant params = producer_parameters_example(1);
-   auto key =  fc::crypto::public_key( std::string("EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV") ); // cspell:disable-line
+   auto key =  fc::crypto::public_key( std::string("SYS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV") ); // cspell:disable-line
    BOOST_REQUIRE_EQUAL( success(), push_action("alice1111111"_n, "regproducer"_n, mvo()
                                                ("producer",  "alice1111111")
                                                ("producer_key", key )
@@ -766,7 +777,7 @@ BOOST_FIXTURE_TEST_CASE( producer_register_unregister, sysio_system_tester ) try
    BOOST_REQUIRE_EQUAL( "http://block.two", info["url"].as_string() );
    BOOST_REQUIRE_EQUAL( 1, info["location"].as_int64() );
 
-   auto key2 =  fc::crypto::public_key( std::string("EOS5jnmSKrzdBHE9n8hw58y7yxFWBC8SNiG7m8S1crJH3KvAnf9o6") ); // cspell:disable-line
+   auto key2 =  fc::crypto::public_key( std::string("SYS5jnmSKrzdBHE9n8hw58y7yxFWBC8SNiG7m8S1crJH3KvAnf9o6") ); // cspell:disable-line
    BOOST_REQUIRE_EQUAL( success(), push_action("alice1111111"_n, "regproducer"_n, mvo()
                                                ("producer",  "alice1111111")
                                                ("producer_key", key2 )
@@ -967,7 +978,7 @@ BOOST_FIXTURE_TEST_CASE( producer_wtmsig_transition, sysio_system_tester ) try {
 
    // The bug in v1.9.0 would cause alice to have an invalid producer authority (the default block_signing_authority).
    // The v1.9.0 system contract would have attempted to set a proposed producer schedule including this invalid
-   // authority which would be rejected by the EOSIO native system and cause the onblock transaction to continue to fail.
+   // authority which would be rejected by the SYSIO native system and cause the onblock transaction to continue to fail.
    // This could be observed by noticing that last_producer_schedule_update was not being updated even though it should.
    // However, starting in v1.9.1, update_elected_producers is smarter about the producer schedule it constructs to
    // propose to the system. It will recognize the default constructed authority (which shouldn't be created by the
@@ -1053,7 +1064,7 @@ BOOST_FIXTURE_TEST_CASE( vote_for_producer, sysio_system_tester, * boost::unit_t
    BOOST_TEST_REQUIRE( stake2votes(core_sym::from_string("88.8888")) == prod["total_votes"].as_double() );
 
    //carol1111111 unstakes part of the stake
-   BOOST_REQUIRE_EQUAL( success(), unstake( "carol1111111", core_sym::from_string("2.0000"), core_sym::from_string("0.0002")/*"2.0000 EOS", "0.0002 EOS"*/ ) );
+   BOOST_REQUIRE_EQUAL( success(), unstake( "carol1111111", core_sym::from_string("2.0000"), core_sym::from_string("0.0002")/*"2.0000 SYS", "0.0002 SYS"*/ ) );
 
    //should decrease alice1111111's total_votes
    prod = get_producer_info( "alice1111111" );
@@ -1078,6 +1089,9 @@ BOOST_FIXTURE_TEST_CASE( vote_for_producer, sysio_system_tester, * boost::unit_t
    //carol1111111 should receive funds in 3 days
    produce_block( fc::days(3) );
    produce_block();
+
+   // do a bid refund for carol
+   BOOST_REQUIRE_EQUAL( success(), push_action( "carol1111111"_n, "refund"_n, mvo()("owner", "carol1111111") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("3000.0000"), get_balance( "carol1111111" ) );
 
 } FC_LOG_AND_RETHROW()
@@ -2728,6 +2742,14 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, sysio_system_tester) 
    abi_serializer msig_abi_ser = initialize_multisig();
    auto producer_names = active_and_vote_producers();
 
+   //change `default_max_inline_action_size` to 512 KB
+   sysio::chain::chain_config params = control->get_global_properties().configuration;
+   params.max_inline_action_size = 512 * 1024;
+   base_tester::push_action( config::system_account_name, "setparams"_n, config::system_account_name, mutable_variant_object()
+                              ("params", params) );
+
+   produce_blocks();
+
    //helper function
    auto push_action_msig = [&]( const account_name& signer, const action_name &name, const variant_object &data, bool auth = true ) -> action_result {
          string action_type_name = msig_abi_ser.get_action_type(name);
@@ -2815,8 +2837,7 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, sysio_system_tester) 
    transaction_trace_ptr trace;
    control->applied_transaction.connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
+      trace = std::get<0>(p);
    } );
 
    BOOST_REQUIRE_EQUAL(success(), push_action_msig( "alice1111111"_n, "exec"_n, mvo()
@@ -3160,7 +3181,7 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, sysio_system_teste
    BOOST_REQUIRE_EQUAL( success(), regproducer( "defproducer2"_n, 2) );
    BOOST_REQUIRE_EQUAL( success(), regproducer( "defproducer3"_n, 3) );
 
-   //stake more than 15% of total EOS supply to activate chain
+   //stake more than 15% of total SYS supply to activate chain
    transfer( "sysio", "alice1111111", core_sym::from_string("600000000.0000"), "sysio" );
    BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_sym::from_string("300000000.0000"), core_sym::from_string("300000000.0000") ) );
    //vote for producers
@@ -3289,7 +3310,7 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, sysio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( success(), regproducer( "producer"_n ) );
 
    produce_block();
-   // stake but but not enough to go live
+   // stake but not enough to go live
    stake_with_transfer( config::system_account_name, "bob"_n,  core_sym::from_string( "35000000.0000" ), core_sym::from_string( "35000000.0000" ) );
    stake_with_transfer( config::system_account_name, "carl"_n, core_sym::from_string( "35000000.0000" ), core_sym::from_string( "35000000.0000" ) );
    BOOST_REQUIRE_EQUAL( success(), vote( "bob"_n, { "producer"_n } ) );
@@ -3313,11 +3334,14 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, sysio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( core_sym::from_string( "9996.9997" ), get_balance("bob") );
    BOOST_REQUIRE_EQUAL( core_sym::from_string( "10000.0000" ), get_balance("alice") );
 
+
    // alice outbids bob on prefb
    {
       const asset initial_names_balance = get_balance("sysio.names"_n);
       BOOST_REQUIRE_EQUAL( success(),
                            bidname( "alice", "prefb", core_sym::from_string("1.1001") ) );
+      // refund bob's failed bid on prefb
+      BOOST_REQUIRE_EQUAL( success(), push_action( "bob"_n, "bidrefund"_n, mvo()("bidder","bob")("newname", "prefb") ) );
       BOOST_REQUIRE_EQUAL( core_sym::from_string( "9997.9997" ), get_balance("bob") );
       BOOST_REQUIRE_EQUAL( core_sym::from_string( "9998.8999" ), get_balance("alice") );
       BOOST_REQUIRE_EQUAL( initial_names_balance + core_sym::from_string("0.1001"), get_balance("sysio.names"_n) );
@@ -3329,6 +3353,8 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, sysio_system_tester ) try {
       BOOST_REQUIRE_EQUAL( core_sym::from_string( "10000.0000" ), get_balance("david") );
       BOOST_REQUIRE_EQUAL( success(),
                            bidname( "david", "prefd", core_sym::from_string("1.9900") ) );
+      // refund carls's failed bid on prefd
+      BOOST_REQUIRE_EQUAL( success(), push_action( "carl"_n, "bidrefund"_n, mvo()("bidder","carl")("newname", "prefd") ) );
       BOOST_REQUIRE_EQUAL( core_sym::from_string( "9999.0000" ), get_balance("carl") );
       BOOST_REQUIRE_EQUAL( core_sym::from_string( "9998.0100" ), get_balance("david") );
    }
@@ -3577,8 +3603,7 @@ BOOST_FIXTURE_TEST_CASE( setparams, sysio_system_tester ) try {
    transaction_trace_ptr trace;
    control->applied_transaction.connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
+      trace = std::get<0>(p);
    } );
 
    BOOST_REQUIRE_EQUAL(success(), push_action_msig( "alice1111111"_n, "exec"_n, mvo()
@@ -3668,8 +3693,7 @@ BOOST_FIXTURE_TEST_CASE( wasmcfg, sysio_system_tester ) try {
    transaction_trace_ptr trace;
    control->applied_transaction.connect(
    [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
+      trace = std::get<0>(p);
    } );
 
    BOOST_REQUIRE_EQUAL(success(), push_action_msig( "alice1111111"_n, "exec"_n, mvo()
@@ -4740,6 +4764,8 @@ BOOST_FIXTURE_TEST_CASE( ramfee_namebid_to_rex, sysio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( success(),                        bidname( carol, "rndmbid"_n, core_sym::from_string("23.7000") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("23.7000"), get_balance( "sysio.names"_n ) );
    BOOST_REQUIRE_EQUAL( success(),                        bidname( alice, "rndmbid"_n, core_sym::from_string("29.3500") ) );
+   // refund carol, the losing bid
+   BOOST_REQUIRE_EQUAL( success(), push_action( carol, "bidrefund"_n, mvo()("bidder","carolaccount")("newname", "rndmbid") ) );
    BOOST_REQUIRE_EQUAL( core_sym::from_string("29.3500"), get_balance( "sysio.names"_n ));
 
    produce_block( fc::hours(24) );

@@ -1,6 +1,6 @@
 # Wire system contracts
 
-Wire system contracts are a collection of contracts deployable to a Wire blockchain. These system contracts extend the robust foundation provided by the [sysio.contracts]() with enhancements from [Antelope]() protocol and some of the key features include: 
+Wire system contracts are a collection of contracts specifically designed for the Wire blockchain, which implements a lot of critical functionality that goes beyond what is provided by the base Antelope protocol, the protocol on which Wire blockchain is built on.
 
 - **Accounts and Permissions**: Flexible permission system for transaction-specific actions via multi-signature authorizations.
 - **Advanced Consensus**: Extends the basic consensus framework to include detailed processes for selecting Node Operators and aligning their incentives, using a system of rewards and penalties.
@@ -77,14 +77,14 @@ You could either use the `./build.sh` script or build the system contracts manua
 >
 > Build contracts *without* tests
 > 
-> ```sh
+> ```shell
 > ./build.sh
 > ```
 > 
 > Build contracts using *with* tests
 > 
 > 
-> ```sh
+> ```shell
 > export WIRE_SYSIO_BUILD_PATH=/absolute/path/to/wire-sysio/build
 >
 > export CMAKE_PREFIX_PATH=${WIRE_SYSIO_BUILD_PATH}/lib/cmake/sysio
@@ -109,13 +109,9 @@ You could either use the `./build.sh` script or build the system contracts manua
 
 Build system contracts *with* tests using Wire Sysio built from source and with installed CDT package:
 
-```sh
-export WIRE_SYSIO_BUILD_PATH=/absolute/path/to/wire-sysio/build
-
+```shell
 rm -rf build && mkdir build && cd build
-
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dsysio_DIR="${WIRE_SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
-
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dsysio_DIR="${SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
 make -j $(nproc)
 ```
 
@@ -124,20 +120,19 @@ make -j $(nproc)
 <details>
 <summary>Build system contracts with tests using Wire Sysio and CDT both built from source</summary>
 
-```sh
+```shell
 rm -rf build && mkdir build && cd build
-
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dsysio_DIR="${WIRE_SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" -Dsysio_DIR="${SYSIO_BUILD_PATH}/lib/cmake/sysio" ..
 make -j $(nproc)
 ```
+
 </details>
 
 <details>
 <summary>Build system contracts without tests and with CDT build from source</summary>
 
-```sh
+```shell
 rm -rf build && mkdir build && cd build
-
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -Dcdt_DIR="${CDT_BUILD_PATH}/lib/cmake/cdt" ..
 make -j $(nproc)
 ```
@@ -148,7 +143,7 @@ make -j $(nproc)
 
 The following is a list of custom CMake options supported in building the system contracts (default values are shown below):
 
-```
+```text
 -DBUILD_TESTS=OFF                       Do not build the tests
 
 -DSYSTEM_CONFIGURABLE_WASM_LIMITS=ON    Enable use of the CONFIGURABLE_WASM_LIMITS
@@ -162,7 +157,7 @@ The following is a list of custom CMake options supported in building the system
 
 Assuming you built with `BUILD_TESTS=ON`, you can run the tests.
 
-```sh
+```shell
 cd build/tests
 ctest -j $(nproc)
 ```

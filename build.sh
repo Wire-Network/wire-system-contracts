@@ -19,7 +19,7 @@ if [ $# -ne 0 ]; then
         CDT_INSTALL_DIR=$(realpath $OPTARG)
       ;;
       l )
-        WIRE_SYSIO_BUILD_DIR=$(realpath $OPTARG)
+        SYSIO_BUILD_DIR=$(realpath $OPTARG)
         BUILD_TESTS=ON
       ;;
       h )
@@ -40,20 +40,19 @@ if [ $# -ne 0 ]; then
   done
 fi
 
-WIRE_SYSIO_DIR_CMAKE_OPTION=''
+SYSIO_DIR_CMAKE_OPTION=''
 
 if [[ "${BUILD_TESTS}" == "ON" ]]; then
-  echo $WIRE_SYSIO_BUILD_DIR/lib/cmake/sysio/sysio-config.cmake
-  if [[ ! -f "$WIRE_SYSIO_BUILD_DIR/lib/cmake/sysio/sysio-config.cmake" ]]; then
-    echo "Invalid path to WIRE_SYSIO build directory: $WIRE_SYSIO_BUILD_DIR"
+  if [[ ! -f "$SYSIO_BUILD_DIR/lib/cmake/sysio/sysio-config.cmake" ]]; then
+    echo "Invalid path to WIRE_SYSIO build directory: $SYSIO_BUILD_DIR"
     echo "WIRE_SYSIO build directory is required to build tests. If you do not wish to build tests, leave off the -l option."
     echo "Cannot proceed. Exiting..."
     exit 1;
   fi
 
-  echo "Using WIRE_SYSIO build directory at: $WIRE_SYSIO_BUILD_DIR"
+  echo "Using WIRE_SYSIO build directory at: $SYSIO_BUILD_DIR"
   echo ""
-  WIRE_SYSIO_DIR_CMAKE_OPTION="-DWIRE_SYSIO_DIR=${WIRE_SYSIO_BUILD_DIR}/lib/cmake/sysio"
+  SYSIO_DIR_CMAKE_OPTION="-Dsysio_DIR=${SYSIO_BUILD_DIR}/lib/cmake/sysio"
 fi
 
 CDT_DIR_CMAKE_OPTION=''
@@ -80,6 +79,6 @@ NC='\033[0m'
 CPU_CORES=$(getconf _NPROCESSORS_ONLN)
 mkdir -p build
 pushd build &> /dev/null
-cmake -DBUILD_TESTS=${BUILD_TESTS} ${WIRE_SYSIO_DIR_CMAKE_OPTION} ${CDT_DIR_CMAKE_OPTION} ../
+cmake -DBUILD_TESTS=${BUILD_TESTS} ${SYSIO_DIR_CMAKE_OPTION} ${CDT_DIR_CMAKE_OPTION} ../
 make -j $CPU_CORES
 popd &> /dev/null

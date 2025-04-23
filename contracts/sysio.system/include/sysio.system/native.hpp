@@ -123,7 +123,7 @@ namespace sysiosystem {
 
    // Method parameters commented out to prevent generation of code that parses input data.
    /**
-    * The EOSIO core `native` contract that governs authorization and contracts' abi.
+    * The SYSIO core `native` contract that governs authorization and contracts' abi.
     */
    class [[sysio::contract("sysio.system")]] native : public sysio::contract {
       public:
@@ -131,7 +131,7 @@ namespace sysiosystem {
          using sysio::contract::contract;
 
          /**
-          * These actions map one-on-one with the ones defined in core layer of EOSIO, that's where their implementation
+          * These actions map one-on-one with the ones defined in core layer of SYSIO, that's where their implementation
           * actually is done.
           * They are present here only so they can show up in the abi file and thus user can send them
           * to this contract, but they have no specific implementation at this contract level,
@@ -199,7 +199,6 @@ namespace sysiosystem {
          void deleteauth( name                   account,
                           name                   permission,
                           binary_extension<name> authorized_by ) {
-
             if (permission == name("auth.ext")) require_recipient(name("auth.msg")); // Sig EM auth.ext catch: only auth.msg can remove auth.ext permission
             else check_auth_change(get_self(), account, authorized_by);
          }
@@ -207,7 +206,7 @@ namespace sysiosystem {
          /**
           * Link authorization action assigns a specific action from a contract to a permission you have created. Five system
           * actions can not be linked `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, and `canceldelay`.
-          * This is useful because when doing authorization checks, the EOSIO based blockchain starts with the
+          * This is useful because when doing authorization checks, the SYSIO based blockchain starts with the
           * action needed to be authorized (and the contract belonging to), and looks up which permission
           * is needed to pass authorization validation. If a link is set, that permission is used for authorization
           * validation otherwise then active is the default, with the exception of `sysio.any`.

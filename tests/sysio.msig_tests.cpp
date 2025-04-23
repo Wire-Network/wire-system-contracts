@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include <sysio/testing/tester.hpp>
 #include <sysio/chain/abi_serializer.hpp>
+#include <sysio/chain/global_property_object.hpp>
 #include <sysio/chain/wast_to_wasm.hpp>
 
 #include <fc/variant_object.hpp>
@@ -145,6 +146,8 @@ public:
 
    transaction reqauth( account_name from, const vector<permission_level>& auths, const fc::microseconds& max_serialization_time );
 
+   void check_traces(transaction_trace_ptr trace, std::vector<std::map<std::string, name>> res);
+
    abi_serializer abi_ser;
 };
 
@@ -176,6 +179,19 @@ transaction sysio_msig_tester::reqauth( account_name from, const vector<permissi
    return trx;
 }
 
+void sysio_msig_tester::check_traces(transaction_trace_ptr trace, std::vector<std::map<std::string, name>> res) {
+
+   BOOST_REQUIRE( bool(trace) );
+   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   BOOST_REQUIRE_EQUAL( res.size(), trace->action_traces.size() );
+
+   for (size_t i = 0; i < res.size(); i++) {
+      auto cur_action = trace->action_traces.at(i);
+      BOOST_REQUIRE_EQUAL( res[i]["receiver"], cur_action.receiver );
+      BOOST_REQUIRE_EQUAL( res[i]["act_name"], cur_action.act.name );
+   }
+}
+
 BOOST_AUTO_TEST_SUITE(sysio_msig_tests)
 
 BOOST_FIXTURE_TEST_CASE( propose_approve_execute, sysio_msig_tester ) try {
@@ -205,21 +221,16 @@ BOOST_FIXTURE_TEST_CASE( propose_approve_execute, sysio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                             ("proposer",      "alice")
+                                             ("proposal_name", "first")
+                                             ("executer",      "alice")
    );
 
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
 } FC_LOG_AND_RETHROW()
 
 
@@ -291,22 +302,16 @@ BOOST_FIXTURE_TEST_CASE( propose_approve_by_two, sysio_msig_tester ) try {
                   ("level",         permission_level{ "bob"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
 
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                     {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                     {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                     } );
 } FC_LOG_AND_RETHROW()
 
 
@@ -327,6 +332,14 @@ BOOST_FIXTURE_TEST_CASE( propose_with_wrong_requested_auth, sysio_msig_tester ) 
 
 
 BOOST_FIXTURE_TEST_CASE( big_transaction, sysio_msig_tester ) try {
+   //change `default_max_inline_action_size` to 512 KB
+   sysio::chain::chain_config params = control->get_global_properties().configuration;
+   params.max_inline_action_size = 512 * 1024;
+   base_tester::push_action( config::system_account_name, "setparams"_n, config::system_account_name, mutable_variant_object()
+                              ("params", params) );
+
+   produce_blocks();
+
    vector<permission_level> perm = { { "alice"_n, config::active_name }, { "bob"_n, config::active_name } };
    auto wasm = contracts::util::exchange_wasm();
 
@@ -374,22 +387,16 @@ BOOST_FIXTURE_TEST_CASE( big_transaction, sysio_msig_tester ) try {
                   ("level",         permission_level{ "bob"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
 
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "setcode"_n}}
+                        } );
 } FC_LOG_AND_RETHROW()
 
 
@@ -500,26 +507,20 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_all_approve, sysio_msig_tester )
                   ("proposal_name", "first")
                   ("level",         permission_level{ "carol"_n, config::active_name })
    );
-   // execute by alice to replace the sysio system contract
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
 
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   // execute by alice to replace the sysio system contract
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                             ("proposer",      "alice")
+                                             ("proposal_name", "first")
+                                             ("executer",      "alice")
    );
 
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "setcode"_n}}
+                        } );
 
    // can't create account because system contract was replaced by the reject_all contract
-
    BOOST_REQUIRE_EXCEPTION( create_account_with_resources( "alice1111112"_n, "sysio"_n, core_sym::from_string("1.0000"), false ),
                             sysio_assert_message_exception, sysio_assert_message_is("rejecting all actions")
 
@@ -637,27 +638,19 @@ BOOST_FIXTURE_TEST_CASE( update_system_contract_major_approve, sysio_msig_tester
                   ("proposal_name", "first")
                   ("level",         permission_level{ "apple"_n, config::active_name })
    );
-   // execute by alice to replace the sysio system contract
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
    // execute by another producer different from proposer
-   push_action( "apple"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "apple")
+   transaction_trace_ptr trace = push_action( "apple"_n, "exec"_n, mvo()
+                                             ("proposer",      "alice")
+                                             ("proposal_name", "first")
+                                             ("executer",      "apple")
    );
 
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "setcode"_n}}
+                        } );
 
    // can't create account because system contract was replaced by the reject_all contract
-
    BOOST_REQUIRE_EXCEPTION( create_account_with_resources( "alice1111112"_n, "sysio"_n, core_sym::from_string("1.0000"), false ),
                             sysio_assert_message_exception, sysio_assert_message_is("rejecting all actions")
 
@@ -739,23 +732,16 @@ BOOST_FIXTURE_TEST_CASE( propose_invalidate_approve, sysio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
    );
 
-   //successfully execute
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
-   push_action( "bob"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "bob")
+   transaction_trace_ptr trace = push_action( "bob"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "bob")
    );
 
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( approve_execute_old, sysio_msig_tester ) try {
@@ -783,23 +769,15 @@ BOOST_FIXTURE_TEST_CASE( approve_execute_old, sysio_msig_tester ) try {
                   ("level",         permission_level{ "alice"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
-
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
-
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
 } FC_LOG_AND_RETHROW()
 
 
@@ -887,22 +865,15 @@ BOOST_FIXTURE_TEST_CASE( approve_by_two_old, sysio_msig_tester ) try {
                   ("level",         permission_level{ "bob"_n, config::active_name })
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
-
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
 
 } FC_LOG_AND_RETHROW()
 
@@ -937,22 +908,15 @@ BOOST_FIXTURE_TEST_CASE( approve_with_hash, sysio_msig_tester ) try {
                   ("proposal_hash", trx_hash)
    );
 
-   transaction_trace_ptr trace;
-   control->applied_transaction.connect(
-   [&]( std::tuple<const transaction_trace_ptr&, const packed_transaction_ptr&> p ) {
-      const auto& t = std::get<0>(p);
-      if( t->scheduled ) { trace = t; }
-   } );
-
-   push_action( "alice"_n, "exec"_n, mvo()
-                  ("proposer",      "alice")
-                  ("proposal_name", "first")
-                  ("executer",      "alice")
+   transaction_trace_ptr trace = push_action( "alice"_n, "exec"_n, mvo()
+                                            ("proposer",      "alice")
+                                            ("proposal_name", "first")
+                                            ("executer",      "alice")
    );
-
-   BOOST_REQUIRE( bool(trace) );
-   BOOST_REQUIRE_EQUAL( 1, trace->action_traces.size() );
-   BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( switch_proposal_and_fail_approve_with_hash, sysio_msig_tester ) try {
@@ -995,6 +959,94 @@ BOOST_FIXTURE_TEST_CASE( switch_proposal_and_fail_approve_with_hash, sysio_msig_
                             sysio::chain::crypto_api_exception,
                             fc_exception_message_is("hash mismatch")
    );
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( sendinline, sysio_msig_tester ) try {
+   create_accounts( {"sendinline"_n} );
+   set_code( "sendinline"_n, system_contracts::testing::test_contracts::sendinline_wasm() );
+   set_abi( "sendinline"_n, system_contracts::testing::test_contracts::sendinline_abi().data() );
+
+   create_accounts( {"wrongcon"_n} );
+   set_code( "wrongcon"_n, system_contracts::testing::test_contracts::sendinline_wasm() );
+   set_abi( "wrongcon"_n, system_contracts::testing::test_contracts::sendinline_abi().data() );
+   produce_blocks();
+
+   action act = get_action( config::system_account_name, "reqauth"_n, {}, mvo()("from", "alice"));
+
+   BOOST_REQUIRE_EXCEPTION( base_tester::push_action( "sendinline"_n, "send"_n, "bob"_n, mvo()
+                                                       ("contract", "sysio")
+                                                       ("action_name", "reqauth")
+                                                       ("auths", std::vector<permission_level>{ {"alice"_n, config::active_name} })
+                                                       ("payload", act.data)
+                          ),
+                          unsatisfied_authorization,
+                          fc_exception_message_starts_with("transaction declares authority")
+   );
+
+   base_tester::push_action(config::system_account_name, "updateauth"_n, "alice"_n, mvo()
+                              ("account", "alice")
+                              ("permission", "perm")
+                              ("parent", "active")
+                              ("auth",  authority{ 1, {}, {permission_level_weight{ {"sendinline"_n, config::active_name}, 1}}, {} })
+   );
+   produce_blocks();
+
+   base_tester::push_action( config::system_account_name, "linkauth"_n, "alice"_n, mvo()
+                              ("account", "alice")
+                              ("code", "sysio")
+                              ("type", "reqauth")
+                              ("requirement", "perm")
+   );
+   produce_blocks();
+
+   transaction_trace_ptr trace = base_tester::push_action( "sendinline"_n, "send"_n, "bob"_n, mvo()
+                                                            ("contract", "sysio")
+                                                            ("action_name", "reqauth")
+                                                            ("auths", std::vector<permission_level>{ {"alice"_n, "perm"_n} })
+                                                            ("payload", act.data)
+   );
+   check_traces( trace, {
+                        {{"receiver", "sendinline"_n}, {"act_name", "send"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
+
+   produce_blocks();
+
+   action approve_act = get_action("sysio.msig"_n, "approve"_n, {}, mvo()
+                                    ("proposer", "bob")
+                                    ("proposal_name", "first")
+                                    ("level", permission_level{"sendinline"_n, config::active_name})
+   );
+
+   transaction trx = reqauth( "alice"_n, {permission_level{"alice"_n, "perm"_n}}, abi_serializer_max_time );
+
+   base_tester::push_action( "sysio.msig"_n, "propose"_n, "bob"_n, mvo()
+                              ("proposer", "bob")
+                              ("proposal_name", "first")
+                              ("trx", trx)
+                              ("requested", std::vector<permission_level>{{ "sendinline"_n, config::active_name}})
+   );
+   produce_blocks();
+
+   base_tester::push_action( "sendinline"_n, "send"_n, "bob"_n, mvo()
+                              ("contract", "sysio.msig")
+                              ("action_name", "approve")
+                              ("auths", std::vector<permission_level>{{"sendinline"_n, config::active_name}})
+                              ("payload", approve_act.data)
+   );
+   produce_blocks();
+
+   trace = base_tester::push_action( "sysio.msig"_n, "exec"_n, "bob"_n, mvo()
+                                          ("proposer", "bob")
+                                          ("proposal_name", "first")
+                                          ("executer", "bob")
+   );
+
+   check_traces( trace, {
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
+                        {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
+                        } );
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()

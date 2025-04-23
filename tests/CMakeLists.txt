@@ -1,16 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 
 set(SYSIO_VERSION_MIN "3.1")
-set(SYSIO_VERSION_SOFT_MAX "3.1")
+set(SYSIO_VERSION_SOFT_MAX "5.0.3")
 # set(SYSIO_VERSION_HARD_MAX "")
-set(SYSTEM_ENABLE_WIRE_SYSIO_VERSION_CHECK OFF)
-
-# set(sysio_DIR "/home/svetla/repos/temp-2/wire-sysio/build/lib/cmake/sysio")
 
 find_package(sysio REQUIRED)
 
 # Check the version of Wire Sysio
-if(SYSTEM_ENABLE_WIRE_SYSIO_VERSION_CHECK)
+if(SYSTEM_ENABLE_SYSIO_VERSION_CHECK)
   set(VERSION_MATCH_ERROR_MSG "")
   sysio_check_version(VERSION_OUTPUT "${SYSIO_VERSION}" "${SYSIO_VERSION_MIN}" "${SYSIO_VERSION_SOFT_MAX}"
                       "${SYSIO_VERSION_HARD_MAX}" VERSION_MATCH_ERROR_MSG)

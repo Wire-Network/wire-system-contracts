@@ -6,7 +6,6 @@
 #include <sysio/transaction.hpp>
 
 namespace sysio {
-
    /**
     * The `sysio.msig` system contract allows for creation of proposed transactions which require authorization from a list of accounts, approval of the proposed transactions by those accounts required to approve it, and finally, it also allows the execution of the approved transactions on the blockchain.
     *
@@ -37,8 +36,8 @@ namespace sysio {
           * @param trx - Proposed transaction
           */
          [[sysio::action]]
-         void propose(ignore<name> proposer, ignore<name> proposal_name,
-               ignore<std::vector<permission_level>> requested, ignore<transaction> trx);
+         void propose(name proposer, name proposal_name,
+                      std::vector<permission_level> requested, ignore<transaction> trx);
          /**
           * Approve action approves an existing proposal. Allows an account, the owner of `level` permission, to approve a proposal `proposal_name`
           * proposed by `proposer`. If the proposal's requested approval list contains the `level`
@@ -113,50 +112,46 @@ namespace sysio {
          using exec_action = sysio::action_wrapper<"exec"_n, &multisig::exec>;
          using invalidate_action = sysio::action_wrapper<"invalidate"_n, &multisig::invalidate>;
 
-      private:
-         struct [[sysio::table]] proposal {
-            name                            proposal_name;
-            std::vector<char>               packed_transaction;
+   struct [[sysio::table, sysio::contract("sysio.msig")]] proposal {
+      name                                                            proposal_name;
+      std::vector<char>                                               packed_transaction;
+      sysio::binary_extension< std::optional<time_point> >            earliest_exec_time;
 
-            uint64_t primary_key()const { return proposal_name.value; }
-         };
+      uint64_t primary_key()const { return proposal_name.value; }
+   };
+   typedef sysio::multi_index< "proposal"_n, proposal > proposals;
 
-         typedef sysio::multi_index< "proposal"_n, proposal > proposals;
+   struct [[sysio::table, sysio::contract("sysio.msig")]] old_approvals_info {
+      name                            proposal_name;
+      std::vector<permission_level>   requested_approvals;
+      std::vector<permission_level>   provided_approvals;
+      uint64_t primary_key()const { return proposal_name.value; }
+   };
+   typedef sysio::multi_index< "approvals"_n, old_approvals_info > old_approvals;
+   struct approval {
+      permission_level level;
+      time_point       time;
+   };
 
-         struct [[sysio::table]] old_approvals_info {
-            name                            proposal_name;
-            std::vector<permission_level>   requested_approvals;
-            std::vector<permission_level>   provided_approvals;
+   struct [[sysio::table, sysio::contract("sysio.msig")]] approvals_info {
+      uint8_t                 version = 1;
+      name                    proposal_name;
+      //requested approval doesn't need to contain time, but we want requested approval
+      //to be of exactly the same size as provided approval, in this case approve/unapprove
+      //doesn't change serialized data size. So, we use the same type.
+      std::vector<approval>   requested_approvals;
+      std::vector<approval>   provided_approvals;
+      uint64_t primary_key()const { return proposal_name.value; }
+   };
+   typedef sysio::multi_index< "approvals2"_n, approvals_info > approvals;
 
-            uint64_t primary_key()const { return proposal_name.value; }
-         };
-         typedef sysio::multi_index< "approvals"_n, old_approvals_info > old_approvals;
+   struct [[sysio::table, sysio::contract("sysio.msig")]] invalidation {
+         name         account;
+         time_point   last_invalidation_time;
 
-         struct approval {
-            permission_level level;
-            time_point       time;
-         };
+         uint64_t primary_key() const { return account.value; }
+      };
 
-         struct [[sysio::table]] approvals_info {
-            uint8_t                 version = 1;
-            name                    proposal_name;
-            //requested approval doesn't need to cointain time, but we want requested approval
-            //to be of exact the same size ad provided approval, in this case approve/unapprove
-            //doesn't change serialized data size. So, we use the same type.
-            std::vector<approval>   requested_approvals;
-            std::vector<approval>   provided_approvals;
-
-            uint64_t primary_key()const { return proposal_name.value; }
-         };
-         typedef sysio::multi_index< "approvals2"_n, approvals_info > approvals;
-
-         struct [[sysio::table]] invalidation {
-            name         account;
-            time_point   last_invalidation_time;
-
-            uint64_t primary_key() const { return account.value; }
-         };
-
-         typedef sysio::multi_index< "invals"_n, invalidation > invalidations;
+      typedef sysio::multi_index< "invals"_n, invalidation > invalidations;
    };
 } /// namespace sysio
