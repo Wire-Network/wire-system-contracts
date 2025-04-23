@@ -4,7 +4,7 @@ set -eo pipefail
 function usage() {
   printf "Usage: $0 OPTION...
   -c DIR      Path to CDT installation/build directory. (Optional if using CDT installled at standard system location.)
-  -l DIR      Path to Leap build directory. Optional, but must be specified to build tests.
+  -l DIR      Path to WIRE_SYSIO build directory. Optional, but must be specified to build tests.
   -h          Print this help menu.
   \\n" "$0" 1>&2
   exit 1
@@ -44,13 +44,13 @@ SYSIO_DIR_CMAKE_OPTION=''
 
 if [[ "${BUILD_TESTS}" == "ON" ]]; then
   if [[ ! -f "$SYSIO_BUILD_DIR/lib/cmake/sysio/sysio-config.cmake" ]]; then
-    echo "Invalid path to Leap build directory: $SYSIO_BUILD_DIR"
-    echo "Leap build directory is required to build tests. If you do not wish to build tests, leave off the -l option."
+    echo "Invalid path to WIRE_SYSIO build directory: $SYSIO_BUILD_DIR"
+    echo "WIRE_SYSIO build directory is required to build tests. If you do not wish to build tests, leave off the -l option."
     echo "Cannot proceed. Exiting..."
     exit 1;
   fi
 
-  echo "Using Leap build directory at: $SYSIO_BUILD_DIR"
+  echo "Using WIRE_SYSIO build directory at: $SYSIO_BUILD_DIR"
   echo ""
   SYSIO_DIR_CMAKE_OPTION="-Dsysio_DIR=${SYSIO_BUILD_DIR}/lib/cmake/sysio"
 fi

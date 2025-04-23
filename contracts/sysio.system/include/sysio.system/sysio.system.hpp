@@ -1399,7 +1399,7 @@ namespace sysiosystem {
           */
          [[sysio::action]]
          void limitauthchg( const name& account, const std::vector<name>& allow_perms, const std::vector<name>& disallow_perms );
-         
+
          /**
           * On Link Auth notify to catch auth.ext stuff for sig-em
           */

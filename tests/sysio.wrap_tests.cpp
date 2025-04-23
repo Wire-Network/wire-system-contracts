@@ -71,7 +71,7 @@ public:
       set_producers( {"prod1"_n, "prod2"_n, "prod3"_n, "prod4"_n, "prod5"_n} );
 
       produce_blocks();
-      
+
       while( control->pending_block_producer().to_string() == "sysio" ) {
          produce_block();
       }
@@ -154,7 +154,7 @@ transaction sysio_wrap_tester::reqauth( account_name from, const vector<permissi
 }
 
 void sysio_wrap_tester::check_traces(transaction_trace_ptr trace, std::vector<std::map<std::string, name>> res) {
-   
+
    BOOST_REQUIRE( bool(trace) );
    BOOST_REQUIRE_EQUAL( transaction_receipt::executed, trace->receipt->status );
    BOOST_REQUIRE_EQUAL( res.size(), trace->action_traces.size() );
@@ -179,7 +179,7 @@ BOOST_FIXTURE_TEST_CASE( wrap_exec_direct, sysio_wrap_tester ) try {
    transaction_trace_ptr trace = push_transaction( wrap_trx );
 
    check_traces( trace, {
-                           {{"receiver", "sysio.wrap"_n}, {"act_name", "exec"_n}}, 
+                           {{"receiver", "sysio.wrap"_n}, {"act_name", "exec"_n}},
                            {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
                          } );
 } FC_LOG_AND_RETHROW()
@@ -209,7 +209,7 @@ BOOST_FIXTURE_TEST_CASE( wrap_with_msig, sysio_wrap_tester ) try {
    );
 
    check_traces( trace, {
-                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}}, 
+                        {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
                         {{"receiver", "sysio.wrap"_n}, {"act_name", "exec"_n}},
                         {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
                         } );
@@ -309,7 +309,7 @@ BOOST_FIXTURE_TEST_CASE( wrap_with_msig_producers_change, sysio_wrap_tester ) tr
 
 
    check_traces( trace, {
-                     {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}}, 
+                     {{"receiver", "sysio.msig"_n}, {"act_name", "exec"_n}},
                      {{"receiver", "sysio.wrap"_n}, {"act_name", "exec"_n}},
                      {{"receiver", config::system_account_name}, {"act_name", "reqauth"_n}}
                      } );

@@ -131,7 +131,7 @@ namespace sysio {
 
             [[sysio::action]]
             void forcereg(const name& owner, const uint8_t& tier);
-            
+
         private:
             
             /**
