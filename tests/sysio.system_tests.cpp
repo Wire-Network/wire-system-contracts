@@ -1077,10 +1077,10 @@ BOOST_FIXTURE_TEST_CASE( vote_for_producer, sysio_system_tester, * boost::unit_t
    //should decrease alice1111111's total_votes
    prod = get_producer_info( "alice1111111" );
    BOOST_TEST_REQUIRE( stake2votes(core_sym::from_string("20.2220")) == prod["total_votes"].as_double() );
-   //but eos should still be at stake
+   //but sys should still be at stake
    BOOST_REQUIRE_EQUAL( core_sym::from_string("1955.5556"), get_balance( "bob111111111" ) );
 
-   //carol1111111 unstakes rest of eos
+   //carol1111111 unstakes rest of sys
    BOOST_REQUIRE_EQUAL( success(), unstake( "carol1111111", core_sym::from_string("20.0000"), core_sym::from_string("0.2220") ) );
    //should decrease alice1111111's total_votes to zero
    prod = get_producer_info( "alice1111111" );
@@ -3890,7 +3890,7 @@ BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, sysio_system_tester ) try {
    const name bob{ "bob"_n }, alice{ "alice"_n };
    const std::vector<name> accounts = {bob, alice};
    const std::vector<name> rexborrowers = {"rex1"_n, "rex2"_n, "rex3"_n, "rex4"_n};
-    const asset one_eos      = core_sym::from_string("1.0000");
+    const asset one_sys      = core_sym::from_string("1.0000");
    const asset one_rex      = asset::from_string("1.0000 REX");
    const asset init_balance = core_sym::from_string("1000.0000");
    const asset whale_balance = core_sym::from_string("1000000.0000");
@@ -3944,7 +3944,7 @@ BOOST_FIXTURE_TEST_CASE( rex_rounding_issue, sysio_system_tester ) try {
          }
          BOOST_REQUIRE_EQUAL( success(), push_action( acct, "sellrex"_n, mvo()("from", acct)("rex",one_rex) ) );
          BOOST_REQUIRE_EQUAL( success(),
-                            push_action( acct, "unstaketorex"_n, mvo()("owner", acct)("receiver", acct)("from_net", one_eos)("from_cpu", one_eos) ) );
+                            push_action( acct, "unstaketorex"_n, mvo()("owner", acct)("receiver", acct)("from_net", one_sys)("from_cpu", one_sys) ) );
       }
 
       produce_block( fc::days(1) );
@@ -3998,26 +3998,26 @@ BOOST_FIXTURE_TEST_CASE( rex_auth, sysio_system_tester ) try {
    const std::vector<account_name> accounts = { "aliceaccount"_n, "bobbyaccount"_n };
    const account_name alice = accounts[0], bob = accounts[1];
    const asset init_balance = core_sym::from_string("1000.0000");
-   const asset one_eos      = core_sym::from_string("1.0000");
+   const asset one_sys      = core_sym::from_string("1.0000");
    const asset one_rex      = asset::from_string("1.0000 REX");
    setup_rex_accounts( accounts, init_balance );
 
    const std::string error_msg("missing authority of aliceaccount");
-   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "deposit"_n, mvo()("owner", alice)("amount", one_eos) ) );
-   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "withdraw"_n, mvo()("owner", alice)("amount", one_eos) ) );
-   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "buyrex"_n, mvo()("from", alice)("amount", one_eos) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "deposit"_n, mvo()("owner", alice)("amount", one_sys) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "withdraw"_n, mvo()("owner", alice)("amount", one_sys) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "buyrex"_n, mvo()("from", alice)("amount", one_sys) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg),
-                        push_action( bob, "unstaketorex"_n, mvo()("owner", alice)("receiver", alice)("from_net", one_eos)("from_cpu", one_eos) ) );
+                        push_action( bob, "unstaketorex"_n, mvo()("owner", alice)("receiver", alice)("from_net", one_sys)("from_cpu", one_sys) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "sellrex"_n, mvo()("from", alice)("rex", one_rex) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "cnclrexorder"_n, mvo()("owner", alice) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg),
-                        push_action( bob, "rentcpu"_n, mvo()("from", alice)("receiver", alice)("loan_payment", one_eos)("loan_fund", one_eos) ) );
+                        push_action( bob, "rentcpu"_n, mvo()("from", alice)("receiver", alice)("loan_payment", one_sys)("loan_fund", one_sys) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg),
-                        push_action( bob, "rentnet"_n, mvo()("from", alice)("receiver", alice)("loan_payment", one_eos)("loan_fund", one_eos) ) );
-   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "fundcpuloan"_n, mvo()("from", alice)("loan_num", 1)("payment", one_eos) ) );
-   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "fundnetloan"_n, mvo()("from", alice)("loan_num", 1)("payment", one_eos) ) );
-   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "defcpuloan"_n, mvo()("from", alice)("loan_num", 1)("amount", one_eos) ) );
-   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "defnetloan"_n, mvo()("from", alice)("loan_num", 1)("amount", one_eos) ) );
+                        push_action( bob, "rentnet"_n, mvo()("from", alice)("receiver", alice)("loan_payment", one_sys)("loan_fund", one_sys) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "fundcpuloan"_n, mvo()("from", alice)("loan_num", 1)("payment", one_sys) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "fundnetloan"_n, mvo()("from", alice)("loan_num", 1)("payment", one_sys) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "defcpuloan"_n, mvo()("from", alice)("loan_num", 1)("amount", one_sys) ) );
+   BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "defnetloan"_n, mvo()("from", alice)("loan_num", 1)("amount", one_sys) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "updaterex"_n, mvo()("owner", alice) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "rexexec"_n, mvo()("user", alice)("max", 1) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "consolidate"_n, mvo()("owner", alice) ) );
@@ -4025,7 +4025,7 @@ BOOST_FIXTURE_TEST_CASE( rex_auth, sysio_system_tester ) try {
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "mvfrsavings"_n, mvo()("owner", alice)("rex", one_rex) ) );
    BOOST_REQUIRE_EQUAL( error(error_msg), push_action( bob, "closerex"_n, mvo()("owner", alice) ) );
 
-   BOOST_REQUIRE_EQUAL( error("missing authority of sysio"), push_action( alice, "setrex"_n, mvo()("balance", one_eos) ) );
+   BOOST_REQUIRE_EQUAL( error("missing authority of sysio"), push_action( alice, "setrex"_n, mvo()("balance", one_sys) ) );
 
 } FC_LOG_AND_RETHROW()
 
@@ -5360,12 +5360,12 @@ BOOST_FIXTURE_TEST_CASE( rex_lower_bound, sysio_system_tester ) try {
    const int64_t tot_unlent   = rex_pool["total_unlent"].as<asset>().get_amount();
    const int64_t tot_lent     = rex_pool["total_lent"].as<asset>().get_amount();
    const int64_t tot_lendable = rex_pool["total_lendable"].as<asset>().get_amount();
-   double rex_per_eos = double(tot_rex) / double(tot_lendable);
-   int64_t sell_amount = rex_per_eos * ( tot_unlent - 0.09 * tot_lent );
+   double rex_per_sys = double(tot_rex) / double(tot_lendable);
+   int64_t sell_amount = rex_per_sys * ( tot_unlent - 0.09 * tot_lent );
    produce_block( fc::days(5) );
    BOOST_REQUIRE_EQUAL( success(), sellrex( alice, asset( sell_amount, rex_sym ) ) );
    BOOST_REQUIRE_EQUAL( success(), cancelrexorder( alice ) );
-   sell_amount = rex_per_eos * ( tot_unlent - 0.1 * tot_lent );
+   sell_amount = rex_per_sys * ( tot_unlent - 0.1 * tot_lent );
    BOOST_REQUIRE_EQUAL( success(), sellrex( alice, asset( sell_amount, rex_sym ) ) );
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("no sellrex order is scheduled"),
                         cancelrexorder( alice ) );
