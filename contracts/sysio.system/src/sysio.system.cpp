@@ -526,6 +526,6 @@ namespace sysiosystem {
 
       // Update auth with special permission.
       updateauth_action update_auth{ get_self(), { {get_self(), active_permission} } };
-      update_auth.send(account_name, name("auth.ext"), name("owner"), auth, name(""));
+      update_auth.send(account_name, permission, name("owner"), auth, name(""));
    }
 } /// sysio.system
