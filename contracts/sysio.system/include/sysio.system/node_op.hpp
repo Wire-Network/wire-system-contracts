@@ -10,6 +10,18 @@ class [[sysio::contract("sysio.system")]] node_operator : sysio::contract {
     public:
         using sysio::contract::contract;
 
+        // ----- Node Operator Registration Actions -----
+        /**
+         * @brief Action to register a node operator. This action is used to initiate the registration process for a node operator.
+         * 
+         * @param username The account name of the node operator.
+         * @param signing_key The public Signing Key of the node operator.
+         */
+        [[sysio::action("regnodeop")]]
+        void regnodeop(const sysio::name& username, const sysio::public_key& signing_key);
+
+        // ----- Node Operator Registration Tables  -----
+
         /**
          * @brief Tracks the current root for node operator registration, the most recent order number, the block number when the root was last updated, and the account name of the last registered node operator.
          * 
@@ -74,14 +86,13 @@ class [[sysio::contract("sysio.system")]] node_operator : sysio::contract {
         /**
          * @brief The final node operator roster, tracking all node operators that have been registered, their scores, and their active status. 
          * 
-         * TODO: Determine score's type. Do we want RPC_URL?
+         * TODO: Determine score's type.
          */
         struct [[sysio::table, sysio::contract("sysio.system")]] operators {
             sysio::name username;               // The account name of the node operator
             sysio::public_key signing_key;      // The public Signing Key of the node operator
             sysio::name producing_as;           // The static producer account name the node operator is producing as (alpha - uniform)
-            uint128_t score;                    // The score of the node operator, used for ranking   
-            string rpc_url;                     // The RPC URL of the node operator
+            uint128_t score;                    // The score of the node operator, used for ranking
             bool is_active;                     // Whether the node operator is currently active or not
 
             uint64_t primary_key() const { return username.value; }
