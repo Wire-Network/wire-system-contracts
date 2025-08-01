@@ -132,6 +132,39 @@ namespace sysio {
             [[sysio::action]]
             void forcereg(const name& owner, const uint8_t& tier);
 
+            /**
+             * @brief Asserts that the given owner is listed in the nodeowners table with a tier <= the provided tier.
+             * @param owner The account name to check.
+             * @param tier The maximum tier allowed.
+             */
+            [[sysio::action]]
+            void assertowner(const name& owner, const uint8_t& tier);
+
+            /**
+             * @brief Creates a new user account on the network and records the sponsor mapping.
+             *
+             * @ricardian_contract
+             * ### Intent
+             * The `newuser` action allows a registered tier-1 node owner to create a new user account on the network.
+             *
+             * ### Obligations
+             * - The `creator` must be a registered tier-1 node owner.
+             * - The action will create a new account utilizing a new randomly generated username with the provided `pubkey` as its authority.
+             * - The registration count for the `creator` will be incremented.
+             * - The sponsor mapping (creator, nonce → username) will be recorded in the sponsors table.
+             * - The action will fail if the `creator` is not a tier-1 node owner or if the account already exists.
+             *
+             * ### Rights Granted
+             * - The new user account is granted access to the network with the specified public key.
+             *
+             * @param creator The account name of the tier-1 node owner creating the user
+             * @param nonce A unique nonce to ensure the new account name is unique. This can be a random number or a timestamp.
+             * @param pubkey The public key to be associated with the new user account.
+             * @return The newly created user account name.
+             */
+            [[sysio::action]]
+            name newuser(const name& creator, const name& nonce, const public_key& pubkey);
+
         private:
             
             /**
@@ -224,6 +257,34 @@ namespace sysio {
                 indexed_by<"bytrxid"_n, const_mem_fun<nodeownerreg, checksum256, &nodeownerreg::by_trxid>>
             >nodeownerreg_t;
 
+
+            /**
+             * @brief Table mapping (creator, nonce) to the created username.
+             */
+            struct [[sysio::table]] sponsor {
+                name nonce;
+                name username;
+
+                uint64_t primary_key() const { return nonce.value; }
+                uint64_t by_username() const { return username.value; }
+            };
+
+            typedef sysio::multi_index<
+                "sponsors"_n, sponsor,
+                indexed_by<"byusername"_n, const_mem_fun<sponsor, uint64_t, &sponsor::by_username>>
+            > sponsors_t;
+
+            /**
+             * @brief Table tracking how many new users a node owner has sponsored.
+             */
+            struct [[sysio::table]] sponsorcount {
+                name owner;
+                uint64_t count;
+
+                uint64_t primary_key() const { return owner.value; }
+            };
+
+            typedef sysio::multi_index<"sponsorcount"_n, sponsorcount> sponsorcount_t;
 
             // ---- Private Functions ----
 
