@@ -182,6 +182,8 @@ namespace sysio {
             row.allocated_bw.amount += (netWeight.amount + cpuWeight.amount);
             row.allocated_ram.amount += ramWeight.amount;
         });
+
+        require_recipient(owner); // Notify the owner of the new policy
     };
 
     void roa::expandpolicy(const name& owner, const name& issuer, const asset& netWeight, const asset& cpuWeight, const asset& ramWeight, const uint8_t& networkGen) {
@@ -259,6 +261,8 @@ namespace sysio {
         } else {
             set_resource_limits(owner, updated_res_itr->ram_bytes, updated_res_itr->net_weight.amount, updated_res_itr->cpu_weight.amount);
         }
+
+        require_recipient(owner); // Notify the owner of the policy expansion
     };
 
     void roa::extendpolicy(const name& owner, const name& issuer, const uint32_t& newTimeBlock) {
@@ -275,6 +279,8 @@ namespace sysio {
         policies.modify(pol_itr, get_self(), [&](auto& row) {
             row.time_block = newTimeBlock;
         });
+
+        require_recipient(owner); // Notify the owner of the policy extension
     };
     
     void roa::reducepolicy(const name& owner, const name& issuer, const asset& net_weight, const asset& cpu_weight, const asset& ram_weight, const uint8_t& network_gen) { 
@@ -509,6 +515,8 @@ namespace sysio {
             row.network_gen = state.network_gen;
         });
 
+        require_recipient(owner); // Notify the owner of the new registration
+        
         // TODO: Notify Council contract if needed
     };
 

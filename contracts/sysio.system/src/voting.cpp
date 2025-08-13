@@ -38,7 +38,7 @@ namespace sysiosystem {
       }, producer_authority );
 
       if ( prod != _producers.end() ) {
-         _producers.modify( prod, producer, [&]( producer_info& info ){
+         _producers.modify( prod, get_self(), [&]( producer_info& info ){
             info.producer_key       = producer_key;
             info.is_active          = true;
             info.url                = url;
@@ -50,7 +50,7 @@ namespace sysiosystem {
 
          auto prod2 = _producers2.find( producer.value );
          if ( prod2 == _producers2.end() ) {
-            _producers2.emplace( producer, [&]( producer_info2& info ){
+            _producers2.emplace( get_self(), [&]( producer_info2& info ){
                info.owner                     = producer;
                info.last_votepay_share_update = ct;
             });
@@ -58,7 +58,7 @@ namespace sysiosystem {
             // When introducing the producer2 table row for the first time, the producer's votes must also be accounted for in the global total_producer_votepay_share at the same time.
          }
       } else {
-         _producers.emplace( producer, [&]( producer_info& info ){
+         _producers.emplace( get_self(), [&]( producer_info& info ){
             info.owner              = producer;
             info.total_votes        = 0;
             info.producer_key       = producer_key;
@@ -68,7 +68,7 @@ namespace sysiosystem {
             info.last_claim_time    = ct;
             info.producer_authority.emplace( producer_authority );
          });
-         _producers2.emplace( producer, [&]( producer_info2& info ){
+         _producers2.emplace( get_self(), [&]( producer_info2& info ){
             info.owner                     = producer;
             info.last_votepay_share_update = ct;
          });
