@@ -6,6 +6,8 @@ namespace sysio::testing {
 struct contracts {
    static std::vector<uint8_t> system_wasm() { return read_wasm("${CMAKE_BINARY_DIR}/contracts/sysio.system/sysio.system.wasm"); }
    static std::vector<char>    system_abi() { return read_abi("${CMAKE_BINARY_DIR}/contracts/sysio.system/sysio.system.abi"); }
+   static std::vector<uint8_t> roa_wasm() { return read_wasm("${CMAKE_BINARY_DIR}/contracts/sysio.roa/sysio.roa.wasm"); }
+   static std::vector<char>    roa_abi() { return read_abi("${CMAKE_BINARY_DIR}/contracts/sysio.roa/sysio.roa.abi"); }
    static std::vector<uint8_t> token_wasm() { return read_wasm("${CMAKE_BINARY_DIR}/contracts/sysio.token/sysio.token.wasm"); }
    static std::vector<char>    token_abi() { return read_abi("${CMAKE_BINARY_DIR}/contracts/sysio.token/sysio.token.abi"); }
    static std::vector<uint8_t> msig_wasm() { return read_wasm("${CMAKE_BINARY_DIR}/contracts/sysio.msig/sysio.msig.wasm"); }

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(SYSIO_VERSION_MIN "3.1")
-set(SYSIO_VERSION_SOFT_MAX "5.0.3")
+set(SYSIO_VERSION_MIN "5.1.0")
+set(SYSIO_VERSION_SOFT_MAX "5.1.0")
 # set(SYSIO_VERSION_HARD_MAX "")
 
 find_package(sysio REQUIRED)
