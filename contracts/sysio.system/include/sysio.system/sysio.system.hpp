@@ -201,6 +201,7 @@ namespace sysiosystem {
       return sysio::block_signing_authority_v0{ .threshold = 1, .keys = {{producer_key, 1}} };
    }
 
+   // TODO: We ultimately don't need unpaid_blocks / last_claim_time / location / total_votes since these will relate to our new 'scores' table. We can add assigned operator column to know which operator is assigned to a producer.
    // Defines `producer_info` structure to be stored in `producer_info` table, added after version 1.0
    struct [[sysio::table, sysio::contract("sysio.system")]] producer_info {
       name                                                     owner;
