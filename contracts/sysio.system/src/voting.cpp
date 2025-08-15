@@ -98,7 +98,7 @@ namespace sysiosystem {
       require_auth( producer );
 
       const auto& prod = _producers.get( producer.value, "producer not found" );
-      _producers.modify( prod, same_payer, [&]( producer_info& info ){
+      _producers.modify( prod, get_self(), [&]( producer_info& info ){
          info.deactivate();
       });
    }
