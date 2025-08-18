@@ -508,7 +508,7 @@ namespace sysio {
             row.allocated_ram = allocated_ram;
             row.network_gen = state.network_gen;
         });
-
+        
         // TODO: Notify Council contract if needed
     };
 
