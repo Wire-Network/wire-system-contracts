@@ -732,17 +732,6 @@ public:
       }
    }
 
-   action_result bidname( const account_name& bidder, const account_name& newname, const asset& bid ) {
-      return push_action( name(bidder), "bidname"_n, mvo()
-                          ("bidder",  bidder)
-                          ("newname", newname)
-                          ("bid", bid)
-                          );
-   }
-   action_result bidname( std::string_view bidder, std::string_view newname, const asset& bid ) {
-      return bidname( account_name(bidder), account_name(newname), bid );
-   }
-
    static fc::variant_object producer_parameters_example( int n ) {
       return mutable_variant_object()
          ("max_block_net_usage", 10000000 + n )

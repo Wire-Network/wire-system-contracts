@@ -16,14 +16,6 @@
 #include <string>
 #include <type_traits>
 
-#ifdef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
-#undef CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX
-#endif
-// CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX macro determines whether ramfee and namebid proceeds are
-// channeled to REX pool. In order to stop these proceeds from being channeled, the macro must
-// be set to 0.
-#define CHANNEL_RAM_AND_NAMEBID_FEES_TO_REX 1
-
 namespace sysiosystem {
 
    using sysio::asset;
@@ -94,7 +86,7 @@ namespace sysiosystem {
 #endif
 
   /**
-   * The `sysio.system` smart contract is provided by `block.one` as a sample system contract, and it defines the structures and actions needed for blockchain's core functionality.
+   * The `sysio.system` smart contract; it defines the structures and actions needed for blockchain's core functionality.
    * 
    * Just like in the `sysio.bios` sample contract implementation, there are a few actions which are not implemented at the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`, `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users will be able to push those actions to the chain via the account holding the `sysio.system` contract, but the implementation is at the SYSIO core level. They are referred to as SYSIO native actions.
    * 
@@ -102,41 +94,10 @@ namespace sysiosystem {
    *    delegate their vote to a proxy.
    * - Producers register in order to be voted for, and can claim per-block and per-vote rewards.
    * - Users can buy and sell RAM at a market-determined price.
-   * - Users can bid on premium names.
    * - A resource exchange system (REX) allows token holders to lend their tokens,
    *    and users to rent CPU and Network resources in return for a market-determined fee.
    */
   
-   // A name bid, which consists of:
-   // - a `newname` name that the bid is for
-   // - a `high_bidder` account name that is the one with the highest bid so far
-   // - the `high_bid` which is amount of highest bid
-   // - and `last_bid_time` which is the time of the highest bid
-   struct [[sysio::table, sysio::contract("sysio.system")]] name_bid {
-     name            newname;
-     name            high_bidder;
-     int64_t         high_bid = 0; ///< negative high_bid == closed auction waiting to be claimed
-     time_point      last_bid_time;
-
-     uint64_t primary_key()const { return newname.value;                    }
-     uint64_t by_high_bid()const { return static_cast<uint64_t>(-high_bid); }
-   };
-
-   // A bid refund, which is defined by:
-   // - the `bidder` account name owning the refund
-   // - the `amount` to be refunded
-   struct [[sysio::table, sysio::contract("sysio.system")]] bid_refund {
-      name         bidder;
-      asset        amount;
-
-      uint64_t primary_key()const { return bidder.value; }
-   };
-   typedef sysio::multi_index< "namebids"_n, name_bid,
-                               indexed_by<"highbid"_n, const_mem_fun<name_bid, uint64_t, &name_bid::by_high_bid>  >
-                             > name_bid_table;
-
-   typedef sysio::multi_index< "bidrefunds"_n, bid_refund > bid_refund_table;
-
    // Defines new global state parameters.
    struct [[sysio::table("global"), sysio::contract("sysio.system")]] sysio_global_state : sysio::blockchain_parameters {
       uint64_t free_ram()const { return max_ram_size - total_ram_bytes_reserved; }
@@ -154,7 +115,7 @@ namespace sysiosystem {
       time_point           thresh_activated_stake_time;
       uint16_t             last_producer_schedule_size = 0;
       double               total_producer_vote_weight = 0; /// the sum of all producer votes
-      block_timestamp      last_name_close;
+      block_timestamp      last_name_close; // deprecated
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       SYSLIB_SERIALIZE_DERIVED( sysio_global_state, sysio::blockchain_parameters,
@@ -391,7 +352,7 @@ namespace sysiosystem {
    // - `total_rent` fees received in exchange for lent  (connector),
    // - `total_lendable` total amount of CORE_SYMBOL that have been lent (total_unlent + total_lent),
    // - `total_rex` total number of REX shares allocated to contributors to total_lendable,
-   // - `namebid_proceeds` the amount of CORE_SYMBOL to be transferred from namebids to REX pool,
+   // - `namebid_proceeds` the amount of CORE_SYMBOL to be transferred from namebids to REX pool, // TODO: will remove with REX removal
    // - `loan_num` increments with each new loan
    struct [[sysio::table,sysio::contract("sysio.system")]] rex_pool {
       uint8_t    version = 0;
@@ -1306,34 +1267,6 @@ namespace sysiosystem {
          void updtrevision( uint8_t revision );
 
          /**
-          * Bid name action, allows an account `bidder` to place a bid for a name `newname`.
-          * @param bidder - the account placing the bid,
-          * @param newname - the name the bid is placed for,
-          * @param bid - the amount of system tokens payed for the bid.
-          *
-          * @pre Bids can be placed only on top-level suffix,
-          * @pre Non empty name,
-          * @pre Names longer than 12 chars are not allowed,
-          * @pre Names equal with 12 chars can be created without placing a bid,
-          * @pre Bid has to be bigger than zero,
-          * @pre Bid's symbol must be system token,
-          * @pre Bidder account has to be different than current highest bidder,
-          * @pre Bid must increase current bid by 10%,
-          * @pre Auction must still be opened.
-          */
-         [[sysio::action]]
-         void bidname( const name& bidder, const name& newname, const asset& bid );
-
-         /**
-          * Bid refund action, allows the account `bidder` to get back the amount it bid so far on a `newname` name.
-          *
-          * @param bidder - the account that gets refunded,
-          * @param newname - the name for which the bid was placed and now it gets refunded for.
-          */
-         [[sysio::action]]
-         void bidrefund( const name& bidder, const name& newname );
-
-         /**
           * Change the annual inflation rate of the core token supply and specify how
           * the new issued tokens will be distributed based on the following structure.
           *
@@ -1447,8 +1380,6 @@ namespace sysiosystem {
          using claimrewards_action = sysio::action_wrapper<"claimrewards"_n, &system_contract::claimrewards>;
          using rmvproducer_action = sysio::action_wrapper<"rmvproducer"_n, &system_contract::rmvproducer>;
          using updtrevision_action = sysio::action_wrapper<"updtrevision"_n, &system_contract::updtrevision>;
-         using bidname_action = sysio::action_wrapper<"bidname"_n, &system_contract::bidname>;
-         using bidrefund_action = sysio::action_wrapper<"bidrefund"_n, &system_contract::bidrefund>;
          using setpriv_action = sysio::action_wrapper<"setpriv"_n, &system_contract::setpriv>;
          using setalimits_action = sysio::action_wrapper<"setalimits"_n, &system_contract::setalimits>;
          using setparams_action = sysio::action_wrapper<"setparams"_n, &system_contract::setparams>;
@@ -1482,7 +1413,6 @@ namespace sysiosystem {
          rex_order_outcome fill_rex_order( const rex_balance_table::const_iterator& bitr, const asset& rex );
          asset update_rex_account( const name& owner, const asset& proceeds, const asset& unstake_quant, bool force_vote_update = false );
          void channel_to_rex( const name& from, const asset& amount, bool required = false );
-         void channel_namebid_to_rex( const int64_t highest_bid );
          template <typename T>
          int64_t rent_rex( T& table, const name& from, const name& receiver, const asset& loan_payment, const asset& loan_fund );
          template <typename T>
