@@ -1,8 +1,6 @@
 # Custom Dictionary Words
 abihash
 acnt
-bidname
-bidrefund
 bidrefunds
 bitr
 blockinfo
@@ -43,8 +41,6 @@ linkauth
 mroot
 mvfrsavings
 mvtosavings
-namebid
-namebids
 netloan
 newaccount
 newname
