@@ -1,5 +1,5 @@
 #include <sysio.roa.hpp>
-#include "../../sysio.system/include/sysio.system/native.hpp"
+#include <sysio.system/native.hpp>
 
 namespace sysio {
 
@@ -548,13 +548,6 @@ namespace sysio {
         return asset(allocation_amount, state.total_sys.symbol);
     };
 
-    void roa::assertowner(const name& owner, const uint8_t& tier) {
-        nodeowners_t nodeowners(get_self(), get_self().value);
-        auto itr = nodeowners.find(owner.value);
-        check(itr != nodeowners.end(), "Owner not found in nodeowners table");
-        check(itr->tier <= tier, "Owner's tier is greater than allowed tier");
-    }
-
     name roa::newuser(const name& creator, const name& nonce, const public_key& pubkey) {
         require_auth(creator);
 
@@ -581,12 +574,12 @@ namespace sysio {
             std::string input = nonce.to_string() + std::to_string(attempt) + std::to_string(block_num);
             checksum256 hash = sha256(input.c_str(), input.size());
 
-            // Use first 12 chars of hash as account name (sysio name constraints)
+            static const char* charmap = "12345abcdefghijklmnopqrstuvwxyz";
             std::string uname_str("");
+            // Use first 12 chars of hash as account name (sysio name constraints)
             for (size_t i = 0; i < 12; ++i) {
-                // Use only allowed characters for sysio names: a-z, 1-5, and '.'
-                char c = 'a' + (hash.extract_as_byte_array()[i] % 26);
-                uname_str += c;
+                auto offset = hash.extract_as_byte_array()[i] % 31;
+                uname_str += charmap[offset];
             }
 
             new_username = name(uname_str);
@@ -598,8 +591,8 @@ namespace sysio {
         }
         check(created, "Failed to generate a unique account name after 3 attempts");
 
-       auto owner_auth = sysiosystem::authority{1, {{pubkey, 1}}, {}, {}};
-       auto active_auth = sysiosystem::authority{1, {{pubkey, 1}}, {}, {}};
+        auto owner_auth = sysiosystem::authority{1, {{pubkey, 1}}, {}, {}};
+        auto active_auth = sysiosystem::authority{1, {{pubkey, 1}}, {}, {}};
         action(
             permission_level{get_self(), "active"_n},
             "sysio"_n, "newaccount"_n,

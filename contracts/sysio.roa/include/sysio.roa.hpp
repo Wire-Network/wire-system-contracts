@@ -133,14 +133,6 @@ namespace sysio {
             void forcereg(const name& owner, const uint8_t& tier);
 
             /**
-             * @brief Asserts that the given owner is listed in the nodeowners table with a tier <= the provided tier.
-             * @param owner The account name to check.
-             * @param tier The maximum tier allowed.
-             */
-            [[sysio::action]]
-            void assertowner(const name& owner, const uint8_t& tier);
-
-            /**
              * @brief Creates a new user account on the network and records the sponsor mapping.
              *
              * @ricardian_contract
@@ -259,7 +251,7 @@ namespace sysio {
 
 
             /**
-             * @brief Table mapping (creator, nonce) to the created username.
+             * @brief Table mapping (scoped by creator) of nonce to the created username.
              */
             struct [[sysio::table]] sponsor {
                 name nonce;

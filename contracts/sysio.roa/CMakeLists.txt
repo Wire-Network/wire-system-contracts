@@ -2,7 +2,8 @@ add_contract(sysio.roa sysio.roa ${CMAKE_CURRENT_SOURCE_DIR}/src/sysio.roa.cpp)
 
 target_include_directories(sysio.roa
    PUBLIC
-   ${CMAKE_CURRENT_SOURCE_DIR}/include)
+   ${CMAKE_CURRENT_SOURCE_DIR}/include
+   ${CMAKE_CURRENT_SOURCE_DIR}/../sysio.system/include)
 
 set_target_properties(sysio.roa
    PROPERTIES
