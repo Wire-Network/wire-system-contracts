@@ -24,13 +24,7 @@ namespace sysiosystem {
     _global2(get_self(), get_self().value),
     _global3(get_self(), get_self().value),
     _global4(get_self(), get_self().value),
-    _rammarket(get_self(), get_self().value),
-    _rexpool(get_self(), get_self().value),
-    _rexretpool(get_self(), get_self().value),
-    _rexretbuckets(get_self(), get_self().value),
-    _rexfunds(get_self(), get_self().value),
-    _rexbalance(get_self(), get_self().value),
-    _rexorders(get_self(), get_self().value)
+    _rammarket(get_self(), get_self().value)
    {
       _gstate  = _global.exists() ? _global.get() : get_default_parameters();
       _gstate2 = _global2.exists() ? _global2.get() : sysio_global_state2{};
@@ -507,9 +501,6 @@ namespace sysiosystem {
          m.quote.balance.amount = system_token_supply.amount / 1000;
          m.quote.balance.symbol = core;
       });
-
-      token::open_action open_act{ token_account, { {get_self(), active_permission} } };
-      open_act.send( rex_account, core, get_self() );
    }
 
    // ** ON NOTIFY OF AUTH.MSG MODIFICATION **
