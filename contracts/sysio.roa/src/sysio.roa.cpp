@@ -64,12 +64,12 @@ namespace sysio {
         check(sysioreslimit.find(sys_account.value) == sysioreslimit.end(), "sysio reslimit already exists.");
         sysioreslimit.emplace(get_self(), [&](auto& row) {
             row.owner = sys_account;
-            row.net_weight = asset(56671995, totalSys.symbol);
-            row.cpu_weight = asset(56671995, totalSys.symbol);
+            row.net_weight = asset(0, totalSys.symbol);
+            row.cpu_weight = asset(0, totalSys.symbol);
             row.ram_bytes = sysio_ram_bytes;
         });
 
-        // Set sysio.roas new account limits.
+        // Set sysio new account limits.
         set_resource_limits(sys_account, sysio_ram_bytes, -1, -1);
     };
 
