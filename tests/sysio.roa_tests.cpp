@@ -67,11 +67,6 @@ public:
                return abi_ser.binary_to_variant( "nodeowners", data, abi_serializer::create_yield_function(abi_serializer_max_time) );
             }
          }
-      } else {
-         return fc::variant(mvo()
-            ("owner", acc)
-            ("tier", 3)
-         );
       }
       return fc::variant();
    }
