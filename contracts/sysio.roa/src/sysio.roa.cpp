@@ -569,17 +569,26 @@ namespace sysio {
         name new_username;
         bool created = false;
         uint32_t block_num = current_block_number();
+
+        // Create the username string buffer once, so we don't reallocate
+        const size_t NAME_LENGTH = 12; // sysio name constraints
+        char uname_str[NAME_LENGTH + 1];
+        uname_str[NAME_LENGTH] = 0; // ensure null-termination
+
         for (uint8_t attempt = 0; attempt < 3; ++attempt) {
             // Hash nonce + attempt + block_num to generate username
             std::string input = nonce.to_string() + std::to_string(attempt) + std::to_string(block_num);
             checksum256 hash = sha256(input.c_str(), input.size());
 
-            static const char* charmap = "12345abcdefghijklmnopqrstuvwxyz";
-            std::string uname_str("");
+            static constexpr char charmap[] = {'1','2','3','4','5',
+               'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
+               'p','q','r','s','t','u','v','w','x','y','z'};
+            constexpr size_t charmap_len = sizeof(charmap) / sizeof(charmap[0]);
+
             // Use first 12 chars of hash as account name (sysio name constraints)
             for (size_t i = 0; i < 12; ++i) {
-                auto offset = hash.extract_as_byte_array()[i] % 31;
-                uname_str += charmap[offset];
+                auto offset = hash.extract_as_byte_array()[i] % charmap_len;
+                uname_str[i] = charmap[offset];
             }
 
             new_username = name(uname_str);

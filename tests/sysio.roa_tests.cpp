@@ -25,7 +25,7 @@ public:
    sysio_roa_tester() {
       produce_blocks( 2 );
 
-      create_accounts( { "alice"_n, "bob"_n, "carol"_n } );
+      create_accounts( { "alice"_n, "bob"_n, "carol"_n, "darcy"_n } );
       produce_blocks( 2 );
 
       set_code( ROA, contracts::roa_wasm() );
@@ -251,6 +251,51 @@ BOOST_FIXTURE_TEST_CASE( newuser_multiple_creators_test, sysio_roa_tester ) try 
    auto new_name = fc::raw::unpack<name>(newuser_action_trace.return_value);
    auto new_name2 = fc::raw::unpack<name>(newuser_action_trace2.return_value);
    BOOST_REQUIRE_NE(new_name, new_name2);
+
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( newuser_nonce_collision, sysio_roa_tester ) try {
+   auto result = regnodeowner("alice"_n, 1);
+   BOOST_REQUIRE_EQUAL(success(), result);
+   result = regnodeowner("bob"_n, 1);
+   BOOST_REQUIRE_EQUAL(success(), result);
+   result = regnodeowner("carol"_n, 1);
+   BOOST_REQUIRE_EQUAL(success(), result);
+   result = regnodeowner("darcy"_n, 1);
+   BOOST_REQUIRE_EQUAL(success(), result);
+   produce_blocks(1);
+
+   auto alice_owner = get_nodeowner("alice"_n);
+   BOOST_REQUIRE_EQUAL(alice_owner.is_null(), false);
+   BOOST_REQUIRE_EQUAL(alice_owner["tier"].as<uint32_t>(), 1);
+   auto bob_owner = get_nodeowner("bob"_n);
+   BOOST_REQUIRE_EQUAL(bob_owner.is_null(), false);
+   BOOST_REQUIRE_EQUAL(bob_owner["tier"].as<uint32_t>(), 1);
+   auto carol_owner = get_nodeowner("carol"_n);
+   BOOST_REQUIRE_EQUAL(carol_owner.is_null(), false);
+   BOOST_REQUIRE_EQUAL(carol_owner["tier"].as<uint32_t>(), 1);
+   auto darcy_owner = get_nodeowner("darcy"_n);
+   BOOST_REQUIRE_EQUAL(darcy_owner.is_null(), false);
+   BOOST_REQUIRE_EQUAL(darcy_owner["tier"].as<uint32_t>(), 1);
+
+
+   // First three will succeed, but then we run out of collision attempts
+   auto same_nonce = "inauspicious"_n;
+   auto newuser_result = newuser("alice"_n, same_nonce, get_public_key("alice"_n, "active"));
+   auto newuser_result2 = newuser("bob"_n, same_nonce, get_public_key("bob"_n, "active"));
+   auto newuser_result3 = newuser("carol"_n, same_nonce, get_public_key("carol"_n, "active"));
+
+   BOOST_REQUIRE_EXCEPTION(
+        newuser("darcy"_n, same_nonce, get_public_key("darcy"_n, "active")),
+        sysio_assert_message_exception,
+        sysio_assert_message_is("Failed to generate a unique account name after 3 attempts"));
+
+   produce_blocks(1);
+
+   BOOST_REQUIRE_EQUAL(1, get_sponsor_count("alice"_n));
+   BOOST_REQUIRE_EQUAL(1, get_sponsor_count("bob"_n));
+   BOOST_REQUIRE_EQUAL(1, get_sponsor_count("carol"_n));
+   BOOST_REQUIRE_EQUAL(0, get_sponsor_count("darcy"_n));
 
 } FC_LOG_AND_RETHROW()
 
