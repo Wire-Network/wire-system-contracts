@@ -1,4 +1,5 @@
 #include <sysio.roa.hpp>
+#include <sysio.system/native.hpp>
 
 namespace sysio {
 
@@ -546,6 +547,89 @@ namespace sysio {
 
         return asset(allocation_amount, state.total_sys.symbol);
     };
+
+    name roa::newuser(const name& creator, const name& nonce, const public_key& pubkey) {
+        require_auth(creator);
+
+       roastate_t roastate(get_self(), get_self().value);
+       auto state = roastate.get();
+       check(state.is_active, "ROA is not active yet");
+
+       // Check if creator is a tier-1 node owner
+       nodeowners_t nodeowners(get_self(), state.network_gen);
+       auto node_itr = nodeowners.find(creator.value);
+       check(node_itr != nodeowners.end() && node_itr->tier == 1, "Creator is not a registered tier-1 node owner");
+
+        // Check if nonce already exists in sponsors table for this creator
+        sponsors_t sponsors(get_self(), creator.value);
+        auto sponsor_itr = sponsors.find(nonce.value);
+        check(sponsor_itr == sponsors.end(), "Sponsor entry for this nonce already exists");
+
+        // Try up to 3 times to generate a unique username
+        name new_username;
+        bool created = false;
+        uint32_t block_num = current_block_number();
+
+        // Create the username string buffer once, so we don't reallocate
+        const size_t NAME_LENGTH = 12; // sysio name constraints
+        char uname_str[NAME_LENGTH + 1];
+        uname_str[NAME_LENGTH] = 0; // ensure null-termination
+
+        for (uint8_t attempt = 0; attempt < 3; ++attempt) {
+            // Hash nonce + attempt + block_num to generate username
+            std::string input = nonce.to_string() + std::to_string(attempt) + std::to_string(block_num);
+            checksum256 hash = sha256(input.c_str(), input.size());
+
+            static constexpr char charmap[] = {'1','2','3','4','5',
+               'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
+               'p','q','r','s','t','u','v','w','x','y','z'};
+            constexpr size_t charmap_len = sizeof(charmap) / sizeof(charmap[0]);
+
+            // Use first 12 chars of hash as account name (sysio name constraints)
+            for (size_t i = 0; i < 12; ++i) {
+                auto offset = hash.extract_as_byte_array()[i] % charmap_len;
+                uname_str[i] = charmap[offset];
+            }
+
+            new_username = name(uname_str);
+
+            if (!is_account(new_username)) {
+                created = true;
+                break;
+            }
+        }
+        check(created, "Failed to generate a unique account name after 3 attempts");
+
+        auto owner_auth = sysiosystem::authority{1, {{pubkey, 1}}, {}, {}};
+        auto active_auth = sysiosystem::authority{1, {{pubkey, 1}}, {}, {}};
+        action(
+            permission_level{get_self(), "active"_n},
+            "sysio"_n, "newaccount"_n,
+            std::make_tuple( get_self(), new_username, owner_auth, active_auth)
+        ).send();
+
+        // Record sponsor mapping
+        sponsors.emplace(creator, [&](auto& row) {
+            row.nonce = nonce;
+            row.username = new_username;
+        });
+
+        // Update sponsor count for creator
+        sponsorcount_t sponsorcount(get_self(), state.network_gen);
+        auto count_itr = sponsorcount.find(creator.value);
+        if (count_itr == sponsorcount.end()) {
+            sponsorcount.emplace(get_self(), [&](auto& row) {
+                row.owner = creator;
+                row.count = 1;
+            });
+        } else {
+            sponsorcount.modify(count_itr, get_self(), [&](auto& row) {
+                row.count += 1;
+            });
+        }
+
+        return new_username;
+    }
 };
 
 // namespace roa
