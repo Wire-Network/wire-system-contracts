@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.15)
 
 project(wire_system_contracts)
+
+include(ExternalProject)
 
 set(VERSION_MAJOR 3)
 set(VERSION_MINOR 3)
@@ -15,30 +17,28 @@ endif()
 
 message(STATUS "Building wire-system-contracts v${VERSION_FULL}")
 
-include(ExternalProject)
-
-find_package(cdt)
+find_package(cdt REQUIRED)
 
 option(SYSTEM_CONFIGURABLE_WASM_LIMITS
-       "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature" ON)
+  "Enables use of the host functions activated by the CONFIGURABLE_WASM_LIMITS protocol feature" ON)
 
 option(SYSTEM_BLOCKCHAIN_PARAMETERS
-       "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
+  "Enables use of the host functions activated by the BLOCKCHAIN_PARAMETERS protocol feature" ON)
 
 option(SYSTEM_ENABLE_SYSIO_VERSION_CHECK
-      "Enables a configure-time check that the version of Wire Sysio's tester library is compatible with this project's unit tests" ON)
+  "Enables a configure-time check that the version of Wire Sysio's tester library is compatible with this project's unit tests" ON)
 
 option(SYSTEM_ENABLE_CDT_VERSION_CHECK
-      "Enables a configure-time check that the version of CDT is compatible with this project's contracts" ON)
+  "Enables a configure-time check that the version of CDT is compatible with this project's contracts" ON)
 
 ExternalProject_Add(
   contracts_project
   SOURCE_DIR ${CMAKE_SOURCE_DIR}/contracts
   BINARY_DIR ${CMAKE_BINARY_DIR}/contracts
   CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
-             -DCMAKE_TOOLCHAIN_FILE=${CDT_ROOT}/lib/cmake/cdt/CDTWasmToolchain.cmake
-             -DSYSTEM_CONFIGURABLE_WASM_LIMITS=${SYSTEM_CONFIGURABLE_WASM_LIMITS}
-             -DSYSTEM_BLOCKCHAIN_PARAMETERS=${SYSTEM_BLOCKCHAIN_PARAMETERS}
+  -DCMAKE_TOOLCHAIN_FILE=${CDT_ROOT}/lib/cmake/cdt/CDTWasmToolchain.cmake
+  -DSYSTEM_CONFIGURABLE_WASM_LIMITS=${SYSTEM_CONFIGURABLE_WASM_LIMITS}
+  -DSYSTEM_BLOCKCHAIN_PARAMETERS=${SYSTEM_BLOCKCHAIN_PARAMETERS}
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
   TEST_COMMAND ""
@@ -46,12 +46,23 @@ ExternalProject_Add(
   BUILD_ALWAYS 1)
 
 if(APPLE)
-  set(OPENSSL_ROOT "/usr/local/opt/openssl")
+  if(IS_DIRECTORY "/usr/local/opt/openssl")
+    set(OPENSSL_ROOT "/usr/local/opt/openssl")
+  elseif(IS_DIRECTORY "/opt/homebrew/opt/openssl")
+    set(OPENSSL_ROOT "/opt/homebrew/opt/openssl")
+  else()
+    message(FATAL_ERROR "OpenSSL not found. Please install OpenSSL via Homebrew.")
+  endif()
 elseif(UNIX)
-  set(OPENSSL_ROOT "/usr/include/openssl")
+  if(IS_DIRECTORY "/usr/include/openssl")
+    set(OPENSSL_ROOT "/usr/include/openssl")
+  else()
+    message(FATAL_ERROR "OpenSSL not found. Please install OpenSSL via Homebrew.")
+  endif()
 endif()
-set(SECP256K1_ROOT "/usr/local")
 
+# NOT USED CURRENTLY
+# set(SECP256K1_ROOT "/usr/local")
 option(BUILD_TESTS "Build unit tests" OFF)
 
 if(BUILD_TESTS)
