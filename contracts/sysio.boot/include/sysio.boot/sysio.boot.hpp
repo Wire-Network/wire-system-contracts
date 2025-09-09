@@ -176,17 +176,6 @@ namespace sysioboot {
                           ignore<name>  type ) {}
 
          /**
-          * Cancel delay action.
-          *
-          * @details Cancels a deferred transaction.
-          *
-          * @param canceling_auth - the permission that authorizes this action,
-          * @param trx_id - the deferred transaction id to be cancelled.
-          */
-         [[sysio::action]]
-         void canceldelay( ignore<permission_level> canceling_auth, ignore<checksum256> trx_id ) {}
-
-         /**
           * Set code action.
           *
           * @details Sets the contract code for an account.
@@ -213,19 +202,6 @@ namespace sysioboot {
          /** @}*/
 
          /**
-          * On error action.
-          *
-          * @details Notification of this action is delivered to the sender of a deferred transaction
-          * when an objective error occurs while executing the deferred transaction.
-          * This action is not meant to be called directly.
-          *
-          * @param sender_id - the id for the deferred transaction chosen by the sender,
-          * @param sent_trx - the deferred transaction that failed.
-          */
-         [[sysio::action]]
-         void onerror( ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx );
-
-         /**
           * Activates a protocol feature.
           *
           * @details Activates a protocol feature
@@ -250,7 +226,6 @@ namespace sysioboot {
          using deleteauth_action = action_wrapper<"deleteauth"_n, &boot::deleteauth>;
          using linkauth_action = action_wrapper<"linkauth"_n, &boot::linkauth>;
          using unlinkauth_action = action_wrapper<"unlinkauth"_n, &boot::unlinkauth>;
-         using canceldelay_action = action_wrapper<"canceldelay"_n, &boot::canceldelay>;
          using setcode_action = action_wrapper<"setcode"_n, &boot::setcode>;
          using setabi_action = action_wrapper<"setabi"_n, &boot::setabi>;
          using activate_action = action_wrapper<"activate"_n, &boot::activate>;

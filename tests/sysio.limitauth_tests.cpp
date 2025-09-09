@@ -52,7 +52,7 @@ struct limitauth_tester: sysio_system_tester {
          signed_transaction trx;
          trx.actions.push_back(action{{pl}, code, act, std::move(vec)});
 
-         set_transaction_headers(trx, DEFAULT_EXPIRATION_DELTA, 0);
+         set_transaction_headers(trx, DEFAULT_EXPIRATION_DELTA);
          trx.sign(get_private_key(pl.actor, pl.permission.to_string()), control->get_chain_id());
          push_transaction(trx);
          return "";
