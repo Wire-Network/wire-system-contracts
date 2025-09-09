@@ -69,7 +69,7 @@ namespace sysiobios {
    /**
     * The `sysio.bios` is the first sample of system contract provided by `block.one` through the SYSIO platform. It is a minimalist system contract because it only supplies the actions that are absolutely critical to bootstrap a chain and nothing more. This allows for a chain agnostic approach to bootstrapping a chain.
     * 
-    * Just like in the `sysio.system` sample contract implementation, there are a few actions which are not implemented at the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `canceldelay`, `onerror`, `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users will be able to push those actions to the chain via the account holding the `sysio.system` contract, but the implementation is at the SYSIO core level. They are referred to as SYSIO native actions.
+    * Just like in the `sysio.system` sample contract implementation, there are a few actions which are not implemented at the contract level (`newaccount`, `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, `setabi`, `setcode`), they are just declared in the contract so they will show in the contract's ABI and users will be able to push those actions to the chain via the account holding the `sysio.system` contract, but the implementation is at the SYSIO core level. They are referred to as SYSIO native actions.
     */
    class [[sysio::contract("sysio.bios")]] bios : public sysio::contract {
       public:
@@ -117,7 +117,7 @@ namespace sysiobios {
 
          /**
           * Link authorization action assigns a specific action from a contract to a permission you have created. Five system
-          * actions can not be linked `updateauth`, `deleteauth`, `linkauth`, `unlinkauth`, and `canceldelay`.
+          * actions can not be linked `updateauth`, `deleteauth`, `linkauth`, and `unlinkauth`.
           * This is useful because when doing authorization checks, the SYSIO based blockchain starts with the
           * action needed to be authorized (and the contract belonging to), and looks up which permission
           * is needed to pass authorization validation. If a link is set, that permission is used for authoraization
@@ -149,15 +149,6 @@ namespace sysiobios {
                           ignore<name>  type ) {}
 
          /**
-          * Cancel delay action cancels a deferred transaction.
-          *
-          * @param canceling_auth - the permission that authorizes this action,
-          * @param trx_id - the deferred transaction id to be cancelled.
-          */
-         [[sysio::action]]
-         void canceldelay( ignore<permission_level> canceling_auth, ignore<checksum256> trx_id ) {}
-
-         /**
           * Set code action sets the contract code for an account.
           *
           * @param account - the account for which to set the contract code.
@@ -178,17 +169,6 @@ namespace sysiobios {
           */
          [[sysio::action]]
          void setabi( name account, const std::vector<char>& abi );
-
-         /**
-          * On error action, notification of this action is delivered to the sender of a deferred transaction
-          * when an objective error occurs while executing the deferred transaction.
-          * This action is not meant to be called directly.
-          *
-          * @param sender_id - the id for the deferred transaction chosen by the sender,
-          * @param sent_trx - the deferred transaction that failed.
-          */
-         [[sysio::action]]
-         void onerror( ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx );
 
          /**
           * Set privilege action allows to set privilege status for an account (turn it on/off).
@@ -268,7 +248,6 @@ namespace sysiobios {
          using deleteauth_action = action_wrapper<"deleteauth"_n, &bios::deleteauth>;
          using linkauth_action = action_wrapper<"linkauth"_n, &bios::linkauth>;
          using unlinkauth_action = action_wrapper<"unlinkauth"_n, &bios::unlinkauth>;
-         using canceldelay_action = action_wrapper<"canceldelay"_n, &bios::canceldelay>;
          using setcode_action = action_wrapper<"setcode"_n, &bios::setcode>;
          using setabi_action = action_wrapper<"setabi"_n, &bios::setabi>;
          using setpriv_action = action_wrapper<"setpriv"_n, &bios::setpriv>;
