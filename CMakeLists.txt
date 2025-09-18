@@ -54,11 +54,7 @@ if(APPLE)
     message(FATAL_ERROR "OpenSSL not found. Please install OpenSSL via Homebrew.")
   endif()
 elseif(UNIX)
-  if(IS_DIRECTORY "/usr/include/openssl")
-    set(OPENSSL_ROOT "/usr/include/openssl")
-  else()
-    message(FATAL_ERROR "OpenSSL not found. Please install OpenSSL via Homebrew.")
-  endif()
+  set(OPENSSL_ROOT "/usr/include/openssl")
 endif()
 
 # NOT USED CURRENTLY
