@@ -76,9 +76,14 @@ fi
 printf "\t=========== Building wire-system-contracts ===========\n\n"
 RED='\033[0;31m'
 NC='\033[0m'
-CPU_CORES=$(getconf _NPROCESSORS_ONLN)
-mkdir -p build
-pushd build &> /dev/null
-cmake -DBUILD_TESTS=${BUILD_TESTS} ${SYSIO_DIR_CMAKE_OPTION} ${CDT_DIR_CMAKE_OPTION} ../
-make -j $CPU_CORES
-popd &> /dev/null
+CPU_CORES=$(nproc)
+mkdir -p build/release
+
+cmake -S . -B build/release \
+ -DCMAKE_BUILD_TYPE=Release \
+ -DBUILD_TESTS=${BUILD_TESTS} \
+ ${SYSIO_DIR_CMAKE_OPTION} \
+ ${CDT_DIR_CMAKE_OPTION}
+
+CMAKE_BUILD_PARALLEL_LEVEL=${CPU_CORES} cmake --build build/release
+
